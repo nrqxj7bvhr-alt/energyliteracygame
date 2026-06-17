@@ -32,7 +32,7 @@
   .btn:active { transform: scale(0.98); }
 
   /* GAME SCREEN */
-  #gamescreen { flex-direction: column; overflow: hidden; }
+  #gamescreen { flex-direction: column; overflow: hidden; position: relative; }
   #hud { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; padding: 8px 8px 4px; background: #fff; border-bottom: 1px solid var(--border); flex-shrink: 0; }
   .hc { background: var(--bg); border-radius: 8px; padding: 5px 6px; text-align: center; }
   .hl { font-size: 9px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
@@ -43,6 +43,9 @@
   #msgbar { background: rgba(0,0,0,0.8); color: #fff; font-size: 12px; text-align: center; padding: 7px 12px; flex-shrink: 0; min-height: 34px; line-height: 1.4; transition: background 0.3s; }
   #msgbar.highlight { background: var(--amber); font-weight: bold; }
   #msgbar.danger { background: var(--red); font-weight: bold; }
+
+  /* AUDIO TOGGLE */
+  #audio-toggle { position: absolute; top: 76px; right: 10px; background: rgba(255,255,255,0.9); border: 2px solid var(--border); border-radius: 50%; width: 38px; height: 38px; font-size: 18px; cursor: pointer; z-index: 50; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
   /* CONTROLS */
   #controls { display: flex; justify-content: space-between; align-items: center; padding: 12px 30px; background: #fff; border-top: 1px solid var(--border); padding-bottom: max(12px, env(safe-area-inset-bottom)); flex-shrink: 0; touch-action: none; }
@@ -143,6 +146,7 @@
     <div class="hc"><div class="hl">Saved</div><div class="hv g" id="hsave">RM 0</div></div>
     <div class="hc"><div class="hl">Score</div><div class="hv" id="hscore">0 pts</div></div>
   </div>
+  <button id="audio-toggle" onclick="toggleAudio()">🔊</button>
   <div id="canvas-wrap"><canvas id="cv"></canvas></div>
   <div id="msgbar">Find the 5 energy problems in this stage!</div>
   <div id="controls">
@@ -177,6 +181,86 @@
 <div id="challenge-overlay"><div class="challenge-sheet" id="challenge-sheet"></div></div>
 
 <script>
+// ==========================================
+// AUDIO ENGINE (Web Audio API Synthesizer)
+// ==========================================
+var actx = null;
+var bgmMuted = false;
+
+function initAudio() {
+  if(!actx) {
+    try {
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+      actx = new AudioContext();
+      startBGM();
+    } catch(e) {}
+  }
+  if(actx && actx.state === 'suspended') actx.resume();
+}
+
+function toggleAudio() {
+  bgmMuted = !bgmMuted;
+  document.getElementById('audio-toggle').textContent = bgmMuted ? '🔇' : '🔊';
+}
+
+function snd(type, freq, dur, vol, slide) {
+  if(!actx || bgmMuted) return;
+  try {
+    var o = actx.createOscillator(), g = actx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, actx.currentTime);
+    if(slide) o.frequency.exponentialRampToValueAtTime(slide, actx.currentTime + dur);
+    g.gain.setValueAtTime(vol, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  } catch(e){}
+}
+
+function noise(dur, vol) {
+  if(!actx || bgmMuted) return;
+  try {
+    var buf = actx.createBuffer(1, actx.sampleRate * dur, actx.sampleRate);
+    var dat = buf.getChannelData(0);
+    for(var i=0; i<dat.length; i++) dat[i] = Math.random() * 2 - 1;
+    var n = actx.createBufferSource(); n.buffer = buf;
+    var f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1000;
+    var g = actx.createGain();
+    g.gain.setValueAtTime(vol, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + dur);
+    n.connect(f); f.connect(g); g.connect(actx.destination);
+    n.start();
+  } catch(e){}
+}
+
+var sfx = {
+  pop: () => snd('sine', 600, 0.1, 0.1, 800),
+  click: () => snd('square', 300, 0.05, 0.05),
+  success: () => { snd('square', 400, 0.1, 0.05); setTimeout(()=>snd('square', 600, 0.1, 0.05), 100); setTimeout(()=>snd('square', 800, 0.3, 0.05), 200); },
+  error: () => { snd('sawtooth', 300, 0.2, 0.05, 200); setTimeout(()=>snd('sawtooth', 200, 0.3, 0.05, 100), 200); },
+  break: () => noise(1.0, 0.5),
+  magic: () => { for(let i=0;i<6;i++) setTimeout(()=>snd('sine', 800+Math.random()*600, 0.2, 0.05), i*60); },
+  win: () => { [523.25, 659.25, 783.99, 1046.50].forEach((f,i) => setTimeout(()=>snd('square', f, 0.3, 0.08), i*150)); },
+  run: () => { for(let i=0;i<4;i++) setTimeout(()=>snd('square', 200-i*30, 0.1, 0.05), i*80); }
+};
+
+var bgmNotes = [261.63, 293.66, 329.63, 392.00, 440.00]; // Pentatonic scale
+var bgmTick = 0;
+var bgmPattern = [0,-1,1,-1,2,4,3,-1, 1,-1,2,-1,0,-1,-1,-1];
+function startBGM() {
+  setInterval(() => {
+    if(!bgmMuted && gstate === 'playing') {
+      var p = bgmPattern[bgmTick % bgmPattern.length];
+      if(p >= 0) snd('triangle', bgmNotes[p]*0.5, 0.4, 0.015);
+      bgmTick++;
+    }
+  }, 250);
+}
+
+// ==========================================
+// GAME STATE
+// ==========================================
+
 var cv = document.getElementById('cv');
 var ctx = cv.getContext('2d');
 var W, H, T, animFrame;
@@ -190,7 +274,6 @@ var lostPetEmojis = [];
 
 // Neighbor Kid State
 var stagesWithKid = [];
-// Several different neighbor kid models so it isn't always the same child
 var kidModels = [
   { emoji: '🧒', skin: '#F5C4B3', hair: '#5a3000', shirt: '#E24B4A', name: 'Sam' },
   { emoji: '👦', skin: '#8D5524', hair: '#1a1a1a', shirt: '#185FA5', name: 'Leo' },
@@ -303,7 +386,7 @@ var gameData = [
       {x:2,y:3,w:8,h:3,c:'#707075', e:'⚙️', lbl:'Machine A'},
       {x:14,y:3,w:8,h:3,c:'#707075', e:'⚙️', lbl:'Machine B'},
       {x:2,y:18,w:5,h:5,c:'#808080', e:'📦', lbl:'Crates'}, 
-      {x:14,y:18,w:4,h:3,c:'#D0D0D5', e:'🖥️', lbl:'Desk'}
+      {x:14,y:18,w:4,h:3,c:'#D0D0D5', e:'🖥️', lbl:'Desk'} 
     ],
     decor: [
       {x:21,y:20,w:2,h:2,e:'🛢️'}
@@ -415,7 +498,6 @@ var furnMsgs = {
   'Counter': 'A clean counter, perfect for making a cup of coffee.',
   'Bench': 'You sit on the Bench and watch the world go by.',
   'Water': 'You splash some cool water. Refreshing!'
-
 };
 
 function svgDataUri(svg) {
@@ -423,7 +505,6 @@ function svgDataUri(svg) {
 }
 
 // Generic display names + species/breed "model" labels for the animals.
-// e.g. shown as "Whiskers · Cat (Tabby)". Names are picked per-encounter.
 var animalInfo = {
   '🐈': { species: 'Cat',     model: 'Tabby',            names: ['Whiskers','Mochi','Tiger','Luna'] },
   '🐕': { species: 'Dog',     model: 'Mixed Breed',      names: ['Buddy','Rocky','Bella','Max'] },
@@ -470,19 +551,14 @@ function makeVisualCard(title, subtitle, body, opts) {
           '<feGaussianBlur stdDeviation="0.4"/>' +
         '</filter>' +
       '</defs>' +
-      // background panel
       '<rect width="320" height="320" rx="40" fill="url(#bg)"/>' +
       '<rect x="3" y="3" width="314" height="314" rx="37" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="2"/>' +
-      // ambient lighting + decorative bubbles
       '<rect width="320" height="240" rx="40" fill="url(#glow)"/>' +
       '<circle cx="250" cy="52" r="20" fill="#ffffff" opacity="0.30"/>' +
       '<circle cx="70" cy="60" r="11" fill="' + accent + '" opacity="0.18"/>' +
       '<circle cx="286" cy="120" r="6" fill="' + accent + '" opacity="0.22"/>' +
-      // soft pedestal under the device
       '<ellipse cx="160" cy="214" rx="96" ry="20" fill="#1a2230" opacity="0.07"/>' +
-      // the device illustration
       '<g filter="url(#shadow)">' + body + '</g>' +
-      // label plate
       '<rect x="18" y="244" width="284" height="60" rx="20" fill="#ffffff" opacity="0.92"/>' +
       '<rect x="18" y="244" width="6" height="60" rx="3" fill="url(#accentbar)"/>' +
       '<text x="166" y="270" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#20262F">' + title + '</text>' +
@@ -736,12 +812,6 @@ function getSpotVisualSrc(spot) {
   return spotVisualLibrary[key] || spotVisualLibrary.generic;
 }
 
-// Real photographs of the actual device, served via Wikimedia Commons'
-// Special:FilePath endpoint (a stable, CORS-enabled permanent redirect).
-// "?width=480" asks Commons for a resized thumbnail so we don't pull multi-MB originals.
-// Each value is a verified Commons file name. If a photo fails to load for any
-// reason (offline, host blocked, file moved) the <img> onerror handler swaps in
-// the built-in SVG illustration instead, so the panel is never broken.
 function commonsPhoto(fileName, width) {
   width = width || 480;
   return 'https://commons.wikimedia.org/wiki/Special:FilePath/' +
@@ -1486,8 +1556,10 @@ function performKidAction(targetSpot) {
         targetSpot.broken = true; targetSpot.fixed = true; targetSpot.attempts = 2; stageFixedCount++;
         totalScore = Math.max(0, totalScore - 50);
         setTempMsg("💥 The kid broke the " + targetSpot.label + "!", 300);
+        sfx.break();
       } else {
         setTempMsg("🧒 The kid played with the " + targetSpot.label + " but it survived.", 240);
+        sfx.pop();
       }
       actionTaken = true;
     }
@@ -1496,12 +1568,15 @@ function performKidAction(targetSpot) {
       if (Math.random() < 0.5) {
         targetSpot.broken = false; targetSpot.fixed = false; targetSpot.attempts = 0; stageFixedCount--;
         setTempMsg("✨ The kid miraculously repaired the " + targetSpot.label + "!", 300);
+        sfx.magic();
       } else {
         setTempMsg("🧒 The kid tried to fix the " + targetSpot.label + " but failed.", 240);
+        sfx.pop();
       }
       actionTaken = true;
     } else {
       setTempMsg("🧒 The kid is admiring the " + targetSpot.label + ".", 240);
+      sfx.pop();
       actionTaken = true;
     }
   }
@@ -1550,13 +1625,11 @@ function updatePhysics() {
 
   currentPets.forEach(pet => {
     if (!pet.tamed) {
-      // Gentle, slow wandering — animals just amble around the area.
-      // Occasional brief pauses make it look like grazing/loitering rather than racing.
       if (pet.pause === undefined) pet.pause = 0;
       if (pet.pause > 0) { pet.pause--; return; }
       if (Math.random() < 0.004) { pet.pause = 60 + Math.floor(Math.random() * 90); return; }
 
-      var SLOW = 0.28; // global slow-down so movement reads as casual ambling
+      var SLOW = 0.28; 
       var currentVx = pet.baseVx * SLOW; var currentVy = pet.baseVy * SLOW;
       pet.x += currentVx; if (isSolid(pet.x + Math.sign(currentVx)*pet.radius, pet.y)) pet.baseVx *= -1;
       pet.y += currentVy; if (isSolid(pet.x, pet.y + Math.sign(currentVy)*pet.radius)) pet.baseVy *= -1;
@@ -1688,7 +1761,7 @@ function checkNear(){
   } else if(nearSpot){
     mb.textContent = '⚠ ' + nearSpot.label + ' — Tap E to investigate!'; mb.className = 'danger'; btnE.classList.add('active');
   } else if (nearPet) {
-    mb.textContent = '🐾 ' + nearPet.emoji + ' ' + (nearPet.label || nearPet.emoji) + ' is hanging around — Tap E to interact!'; mb.className = 'highlight'; btnE.classList.add('active');
+    mb.textContent = '🐾 ' + nearPet.emoji + ' ' + (nearPet.name || nearPet.emoji) + ' is hanging around — Tap E to interact!'; mb.className = 'highlight'; btnE.classList.add('active');
   } else if (nearFixedSpot) {
     mb.textContent = '✨ ' + nearFixedSpot.label + ' — Tap E to view details!'; mb.className = 'highlight'; btnE.classList.add('active');
   } else if (nearFurn) {
@@ -1703,44 +1776,37 @@ function drawSprite(px, py, moving){
   ctx.save(); ctx.translate(x, y + bob); ctx.scale(T/20, T/20);
   if(player.faceDir === 0) ctx.scale(-1, 1);
 
-  // soft shadow
   ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(0, 11, 8, 3, 0, 0, Math.PI*2); ctx.fill();
 
   var legSw = moving ? Math.sin(tick * 0.4) * 4 : 0;
-  // legs (rounded)
   ctx.fillStyle='#37475A';
   roundedRectPath(ctx, -5 + legSw, 4, 4, 8, 1.5); ctx.fill();
   roundedRectPath(ctx, 1 - legSw, 4, 4, 8, 1.5); ctx.fill();
-  // shoes
   ctx.fillStyle='#23303d';
   roundedRectPath(ctx, -5.5 + legSw, 11, 5, 2.5, 1); ctx.fill();
   roundedRectPath(ctx, 0.5 - legSw, 11, 5, 2.5, 1); ctx.fill();
 
-  // torso with subtle shading
   var grad = ctx.createLinearGradient(0, -2, 0, 6);
   grad.addColorStop(0, '#2272C0'); grad.addColorStop(1, '#185FA5');
   ctx.fillStyle = grad; roundedRectPath(ctx, -6, -2, 12, 8, 2.5); ctx.fill();
-  // arms
+  
   var sw = moving ? Math.sin(tick * 0.4) * 5 : 0;
   ctx.fillStyle='#185FA5';
   roundedRectPath(ctx, -9, -1, 3, 7 - sw, 1.5); ctx.fill();
   roundedRectPath(ctx, 6, -1, 3, 7 + sw, 1.5); ctx.fill();
-  // hands
+  
   ctx.fillStyle='#F5C4B3';
   ctx.beginPath(); ctx.arc(-7.5, 6 - sw, 1.6, 0, Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.arc(7.5, 6 + sw, 1.6, 0, Math.PI*2); ctx.fill();
 
-  // head
   ctx.fillStyle='#F5C4B3'; roundedRectPath(ctx, -5, -14, 10, 11, 4); ctx.fill();
-  // hair
   ctx.fillStyle='#5a3000'; roundedRectPath(ctx, -6, -15, 12, 5, 3); ctx.fill();
   ctx.fillRect(-6, -12, 2, 4); ctx.fillRect(4, -12, 2, 4);
-  // face details
+  
   if (player.faceDir !== 3) {
     ctx.fillStyle='#222';
     ctx.beginPath(); ctx.arc(1.5, -7.5, 1, 0, Math.PI*2); ctx.fill();
     ctx.strokeStyle='#c0604a'; ctx.lineWidth=0.8; ctx.beginPath(); ctx.moveTo(-1, -4); ctx.lineTo(3, -4); ctx.stroke();
-    // detective badge / lens
     ctx.fillStyle='#EF9F27'; ctx.beginPath(); ctx.arc(8, 0, 2, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.arc(7.4, -0.6, 0.7, 0, Math.PI*2); ctx.fill();
   }
@@ -1751,7 +1817,6 @@ function drawKidSprite(px, py, moving, faceDir, model){
   model = model || kidModels[0];
   var x = px * T, y = py * T, bob = moving ? Math.sin(tick * 0.45) * 1.6 : 0;
   ctx.save(); ctx.translate(x, y + bob);
-  // kids are a bit smaller than the player
   ctx.scale(T/20 * 0.85, T/20 * 0.85);
   if(faceDir === 0) ctx.scale(-1, 1);
 
@@ -1765,7 +1830,6 @@ function drawKidSprite(px, py, moving, faceDir, model){
   roundedRectPath(ctx, -4.5 + legSw, 10, 4.2, 2.2, 1); ctx.fill();
   roundedRectPath(ctx, 0.3 - legSw, 10, 4.2, 2.2, 1); ctx.fill();
 
-  // shirt (uses model colour)
   ctx.fillStyle = model.shirt; roundedRectPath(ctx, -5, -1, 10, 7, 2.2); ctx.fill();
   var sw = moving ? Math.sin(tick * 0.45) * 4 : 0;
   ctx.fillStyle = model.shirt;
@@ -1775,12 +1839,9 @@ function drawKidSprite(px, py, moving, faceDir, model){
   ctx.beginPath(); ctx.arc(-6.2, 5.6 - sw, 1.4, 0, Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.arc(6.2, 5.6 + sw, 1.4, 0, Math.PI*2); ctx.fill();
 
-  // head
   ctx.fillStyle = model.skin; roundedRectPath(ctx, -4.5, -12, 9, 10, 3.8); ctx.fill();
-  // hair
   ctx.fillStyle = model.hair; roundedRectPath(ctx, -5.2, -13, 10.4, 4.6, 2.8); ctx.fill();
   ctx.fillRect(-5.2, -10.5, 1.8, 3.5); ctx.fillRect(3.4, -10.5, 1.8, 3.5);
-  // face
   ctx.fillStyle='#222';
   ctx.beginPath(); ctx.arc(-1.2, -6.2, 0.85, 0, Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.arc(2.2, -6.2, 0.85, 0, Math.PI*2); ctx.fill();
@@ -1792,7 +1853,6 @@ function drawKidSprite(px, py, moving, faceDir, model){
   ctx.stroke();
   ctx.restore();
 
-  // floating name tag
   ctx.save();
   ctx.font = 'bold ' + Math.max(8, Math.floor(T*0.32)) + 'px sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1813,7 +1873,6 @@ function drawGame(){
   for(var wx=0;wx<COLS;wx++){
     for(var wy=0;wy<ROWS;wy++){
       if(wallSet[wk(wx,wy)]){
-        // brick-ish wall with top light and bottom shadow for depth
         ctx.fillStyle='#4a4640'; ctx.fillRect(wx*T,wy*T,T,T);
         ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(wx*T,wy*T,T,Math.max(2,T*0.12));
         ctx.fillStyle='rgba(0,0,0,0.22)'; ctx.fillRect(wx*T,wy*T+T-Math.max(2,T*0.14),T,Math.max(2,T*0.14));
@@ -1872,12 +1931,10 @@ function drawGame(){
     }
   });
 
-  // Animated doors (drawn above floor & furniture so swinging panels are visible)
   currentDoors.forEach(drawDoor);
 
 
   currentPets.forEach(pet => {
-    // body (may be horizontally flipped to face travel direction)
     ctx.save(); ctx.translate(pet.x * T, pet.y * T); if (pet.baseVx > 0) ctx.scale(-1, 1);
     ctx.font = Math.floor(T * 0.8) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(pet.emoji, 0, (!pet.tamed && tick % 36 < 18) ? -2 : 0); 
@@ -1887,7 +1944,6 @@ function drawGame(){
     }
     ctx.restore();
 
-    // name tag (drawn un-flipped so text never mirrors)
     if (pet.name) {
       ctx.save();
       ctx.font = 'bold ' + Math.max(8, Math.floor(T*0.3)) + 'px sans-serif';
@@ -1944,7 +2000,6 @@ function drawGame(){
 
   drawSprite(player.x, player.y, player.moving);
 
-  // subtle vignette for depth
   var vig = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.35, W/2, H/2, Math.max(W,H)*0.72);
   vig.addColorStop(0, 'rgba(0,0,0,0)');
   vig.addColorStop(1, 'rgba(0,0,0,0.22)');
@@ -1988,7 +2043,7 @@ function interact(){
 }
 
 function showFixedDialogue(s) {
-  gstate = 'challenge';
+  gstate = 'challenge'; sfx.pop();
   var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info" style="background:#E1F5EE; color:#0F6E56;">✨ Solved</span>';
   html += '<div class="sheet-title">' + s.label + '</div>';
   html += '<div class="dialogue-box"><div class="dialogue-avatar" style="color:var(--darkgreen);">✓</div><div class="dialogue-text">This device is running at maximum efficiency! You successfully saved <b>RM ' + (s.savings || 0) + '</b> per month here!</div></div>';
@@ -1998,7 +2053,7 @@ function showFixedDialogue(s) {
 }
 
 function showFurnitureDialogue(f) {
-  gstate = 'challenge';
+  gstate = 'challenge'; sfx.pop();
   var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">🛋️ Furniture</span>';
   html += '<div class="sheet-title">' + f.lbl + '</div>';
   html += '<div class="dialogue-box"><div class="dialogue-avatar">' + f.e + '</div><div class="dialogue-text">This ' + f.lbl + ' looks perfectly fine. There are no energy problems here.</div></div>';
@@ -2011,6 +2066,7 @@ function showFurnitureDialogue(f) {
 }
 
 window.useFurniture = function(lbl, emoji) {
+  sfx.click();
   var actionText = furnMsgs[lbl] || ("You take a moment to look at the " + lbl + ".");
   var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">✨ Interact</span>';
   html += '<div class="sheet-title">' + lbl + '</div>';
@@ -2020,7 +2076,7 @@ window.useFurniture = function(lbl, emoji) {
 }
 
 function showKidDialogue() {
-  gstate = 'challenge';
+  gstate = 'challenge'; sfx.pop();
   var isEvil = (kid.type === 'evil');
   var nm = (kid.model && kid.model.name) ? kid.model.name : 'The neighbor kid';
   var av = (kid.model && kid.model.emoji) ? kid.model.emoji : '🧒';
@@ -2039,10 +2095,11 @@ function kickKidOut() {
   kid.active = false;
   cont();
   setTempMsg("👋 You told the neighbor kid to go home.", 300);
+  sfx.run();
 }
 
 function showPetDialogue(pet) {
-  gstate = 'challenge';
+  gstate = 'challenge'; sfx.pop();
   activePet = pet;
   var nm = pet.name || 'an animal';
   var sub = pet.species ? (pet.species + ' · ' + pet.model) : '';
@@ -2063,6 +2120,7 @@ function resolvePetInteract() {
 
   if (isCat) {
     if (Math.random() < 0.5) { 
+      sfx.break();
       html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">You reach out to pet the Cat, but it is fierce and feisty! It hisses and goes on a rampage! 😾</div></div>';
       if (Math.random() < 0.5 && unbrokenSpots.length > 0) {
         var target = unbrokenSpots[Math.floor(Math.random() * unbrokenSpots.length)];
@@ -2072,6 +2130,7 @@ function resolvePetInteract() {
         outcomeMsg = '<div class="outcome-box outcome-info">The cat storms off, but luckily it didn\'t break anything this time!</div>';
       }
     } else { 
+      sfx.magic();
       html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">You gently scratch the Cat behind the ears. It purrs loudly and rubs against your leg! 😻</div></div>';
       if (Math.random() < 0.5 && brokenSpots.length > 0) {
         var target = brokenSpots[Math.floor(Math.random() * brokenSpots.length)];
@@ -2082,6 +2141,7 @@ function resolvePetInteract() {
       }
     }
   } else { 
+    sfx.magic();
     html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">You find the animal adorable and decide to give it a gentle pat. What a cute and loving companion! 🥰</div></div>';
     if (Math.random() < 0.5 && brokenSpots.length > 0) {
         var target = brokenSpots[Math.floor(Math.random() * brokenSpots.length)];
@@ -2111,7 +2171,7 @@ function resolvePetInteract() {
 }
 
 function showChallenge(s){
-  gstate='challenge'; activeSpot=s;
+  gstate='challenge'; activeSpot=s; sfx.pop();
   currentChallengeChoices = s.choices.map((c, i) => ({ text: c, isCorrect: i === s.goodIdx }));
   for (let i = currentChallengeChoices.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [currentChallengeChoices[i], currentChallengeChoices[j]] = [currentChallengeChoices[j], currentChallengeChoices[i]]; }
   var letters=['A','B','C'];
@@ -2136,7 +2196,6 @@ function showChallenge(s){
   var photoSrc = getSpotPhotoSrc(s);
   var svgSrc = getSpotVisualSrc(s);
   var imgSrc = photoSrc || svgSrc;
-  // data-fallback holds the built-in drawing; onerror swaps to it if the photo can't load.
   html+=`<div class="int-mid"><img src="${imgSrc}" alt="${s.label}" data-fallback="${svgSrc}" onerror="if(this.dataset.fallback&&this.src!==this.dataset.fallback){this.onerror=null;this.src=this.dataset.fallback;this.classList.add('is-illustration');}"></div>`;
 
   html+=`<div class="int-right">`;
@@ -2151,7 +2210,9 @@ function showChallenge(s){
 
 function resolve(idx){
   var s = activeSpot, good = currentChallengeChoices[idx].isCorrect, html = '<div class="sheet-handle"></div>';
+  sfx.click();
   if(good){
+    sfx.success();
     s.fixed = true; stageFixedCount++; totalSavings+=s.savings; totalScore+=s.pts;
     document.getElementById('hfound').textContent = stageFixedCount+'/5';
     document.getElementById('hsave').textContent = 'RM '+totalSavings;
@@ -2171,6 +2232,7 @@ function resolve(idx){
     s.attempts = (s.attempts || 0) + 1;
     
     if (s.attempts >= 2) {
+      sfx.break();
       s.broken = true;
       s.fixed = true; 
       stageFixedCount++;
@@ -2203,6 +2265,7 @@ function resolve(idx){
       }
 
     } else {
+      sfx.error();
       totalScore = Math.max(0, totalScore - 20); 
       document.getElementById('hscore').textContent = totalScore+' pts';
       html+=`<div class="sheet-title" style="color:#A32D2D">✗ Not right!</div><div class="outcome-box outcome-bad">${s.bout}</div><div class="fact-box">📚 Hint: ${s.fact}</div><div style="margin-bottom:12px; font-size:13px; font-weight:bold; color:var(--darkred);">⚠ 1 attempt remaining! Lose 20 pts.</div><button class="btn-retry" onclick="retry()">Try Again</button>`;
@@ -2228,7 +2291,6 @@ function initStage() {
     kid.x = gameData[currentStageIdx].startX + 1; 
     kid.y = gameData[currentStageIdx].startY + 1;
     kid.type = Math.random() < 0.5 ? 'evil' : 'good';
-    // Pick a neighbor kid model, avoiding an immediate repeat of the last one
     var pool = kidModels.slice();
     if(kid.model) pool = pool.filter(function(m){ return m.name !== kid.model.name; });
     kid.model = pool[Math.floor(Math.random() * pool.length)];
@@ -2256,6 +2318,7 @@ function initStage() {
 }
 
 function startGame() { 
+  initAudio(); sfx.pop();
   currentStageIdx = 0; totalScore = 0; totalSavings = 0; lostPetEmojis = [];
   
   stagesWithKid = [0]; 
@@ -2277,7 +2340,7 @@ function loadNextStage() {
 }
 
 function showStageClear() { 
-  gstate='paused';
+  gstate='paused'; sfx.win();
   var nextStage = gameData[currentStageIdx + 1];
   document.getElementById('stage-icon').textContent = nextStage.icon;
   document.getElementById('stage-title').textContent = nextStage.name + ' Unlocked!';
@@ -2286,7 +2349,7 @@ function showStageClear() {
 }
 
 function showAdoptions() {
-  gstate = 'paused';
+  gstate = 'paused'; sfx.win();
   var listHtml = '';
   gameData.forEach(stage => {
     stage.pets.forEach(pet => {
@@ -2302,7 +2365,9 @@ function showAdoptions() {
 }
 
 function showWin() { 
-  gstate='paused'; document.getElementById('ws-save').textContent = 'RM '+totalSavings+'/month'; document.getElementById('ws-score').textContent = totalScore+' pts'; showScreen('winscreen'); 
+  gstate='paused'; sfx.win();
+  document.getElementById('ws-save').textContent = 'RM '+totalSavings+'/month'; 
+  document.getElementById('ws-score').textContent = totalScore+' pts'; showScreen('winscreen'); 
 }
 
 // JOYSTICK & KEYS

@@ -251,7 +251,7 @@ function startBGM() {
   setInterval(() => {
     if(!bgmMuted && gstate === 'playing') {
       var p = bgmPattern[bgmTick % bgmPattern.length];
-      if(p >= 0) snd('triangle', bgmNotes[p]*0.5, 0.4, 0.015);
+      if(p >= 0) snd('triangle', bgmNotes[p]*0.5, 0.4, 0.500);
       bgmTick++;
     }
   }, 250);

@@ -1,0 +1,2321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Energy Detective - 5 Stage Campaign</title>
+<style>
+  :root {
+    --green: #1D9E75; --darkgreen: #0F6E56; --red: #E24B4A; --darkred: #A32D2D;
+    --amber: #EF9F27; --blue: #185FA5; --bg: #F5F4F0; --card: #FFFFFF;
+    --text: #1a1a1a; --muted: #666666; --border: #E0DED8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+  /* SCREENS */
+  .screen { display: none; width: 100%; height: 100vh; height: 100dvh; overflow-y: auto; background: var(--bg); }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* INTRO & WIN SCREENS */
+  #intro, #winscreen, #stagescreen, #adoptionscreen { align-items: center; justify-content: center; padding: 24px 20px; }
+  .card { background: var(--card); border-radius: 20px; padding: 28px 22px; width: 100%; max-width: 420px; text-align: center; border: 1px solid var(--border); box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+  .icon { font-size: 56px; margin-bottom: 12px; }
+  .title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .sub { font-size: 14px; color: var(--muted); line-height: 1.7; margin-bottom: 20px; }
+  .how-box { background: var(--bg); border-radius: 12px; padding: 14px 16px; text-align: left; margin-bottom: 20px; }
+  .how-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .how-item { font-size: 13px; color: var(--muted); padding: 3px 0; line-height: 1.5; }
+  .btn { width: 100%; padding: 16px; background: var(--green); color: #fff; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.1s; }
+  .btn:active { transform: scale(0.98); }
+
+  /* GAME SCREEN */
+  #gamescreen { flex-direction: column; overflow: hidden; }
+  #hud { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; padding: 8px 8px 4px; background: #fff; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .hc { background: var(--bg); border-radius: 8px; padding: 5px 6px; text-align: center; }
+  .hl { font-size: 9px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .hv { font-size: 13px; font-weight: 700; color: var(--text); }
+  .hv.g { color: var(--darkgreen); } .hv.b { color: var(--blue); }
+  #canvas-wrap { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+  #cv { display: block; width: 100%; height: 100%; }
+  #msgbar { background: rgba(0,0,0,0.8); color: #fff; font-size: 12px; text-align: center; padding: 7px 12px; flex-shrink: 0; min-height: 34px; line-height: 1.4; transition: background 0.3s; }
+  #msgbar.highlight { background: var(--amber); font-weight: bold; }
+  #msgbar.danger { background: var(--red); font-weight: bold; }
+
+  /* CONTROLS */
+  #controls { display: flex; justify-content: space-between; align-items: center; padding: 12px 30px; background: #fff; border-top: 1px solid var(--border); padding-bottom: max(12px, env(safe-area-inset-bottom)); flex-shrink: 0; touch-action: none; }
+  #joy-zone { width: 90px; height: 90px; border-radius: 50%; background: var(--bg); border: 2px solid var(--border); position: relative; display: flex; align-items: center; justify-content: center; }
+  #joy-stick { width: 44px; height: 44px; border-radius: 50%; background: var(--blue); box-shadow: 0 4px 10px rgba(0,0,0,0.2); position: absolute; transition: transform 0.05s linear; pointer-events: none; }
+  #btn-e { width: 76px; height: 76px; border-radius: 50%; background: #ccc; color: white; font-size: 26px; font-weight: 800; border: none; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.15); transition: 0.1s; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  #btn-e.active { background: var(--green); box-shadow: 0 4px 12px rgba(29, 158, 117, 0.4), inset 0 -4px 0 rgba(0,0,0,0.15); cursor: pointer; }
+  #btn-e.active:active { transform: scale(0.92); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15); }
+  #btn-e-label { font-size: 11px; margin-top: -2px; font-weight: bold; opacity: 0.8;}
+
+  /* OVERLAY */
+  #challenge-overlay { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.6); align-items: flex-end; justify-content: center; }
+  #challenge-overlay.show { display: flex; }
+  .challenge-sheet { background: #fff; border-radius: 24px 24px 0 0; width: 100%; max-width: 800px; padding: 20px 18px 32px; max-height: 90vh; overflow-y: auto; }
+  .sheet-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 16px; }
+  .sheet-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .sheet-desc { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+  .cbtn { width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 14px; background: #fff; color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; line-height: 1.4; transition: 0.15s; display: flex; align-items: flex-start; margin-bottom: 10px;}
+  .cbtn:active { border-color: var(--blue); background: #f0f6ff; transform: scale(0.98); }
+  .choice-letter { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--bg); color: var(--blue); font-weight: 700; font-size: 11px; text-align: center; line-height: 22px; margin-right: 8px; flex-shrink: 0; }
+  .outcome-box { border-radius: 14px; padding: 14px 16px; font-size: 14px; line-height: 1.7; margin-bottom: 12px; font-weight: 500; }
+  .outcome-good { background: #E1F5EE; color: #085041; }
+  .outcome-bad  { background: #FCEBEB; color: #791F1F; }
+  .outcome-info { background: #E6F1FB; color: #0C447C; }
+  .fact-box { background: #FAEEDA; border-radius: 12px; padding: 12px 14px; font-size: 13px; color: #633806; line-height: 1.6; margin-bottom: 14px; }
+  .btn-retry, .btn-continue { width: 100%; padding: 16px; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 4px; transition: 0.1s;}
+  .btn-continue { background: var(--green); color: #fff; border: none; }
+  .btn-continue:active { background: var(--darkgreen); transform: scale(0.98); }
+  .btn-retry { background: #fff; color: var(--darkred); border: 2px solid var(--red); }
+  .btn-retry:active { background: #FCEBEB; transform: scale(0.98); }
+
+  /* 3-COLUMN INTERACTION UI */
+  .interaction-layout { display: flex; gap: 16px; align-items: stretch; margin-top: 10px; }
+  .int-left { flex: 1; background: var(--bg); border: 2px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; justify-content: center; gap: 8px; min-width: 140px; }
+  .int-mid { flex: 0 0 180px; min-height: 180px; background: linear-gradient(160deg, #FFFFFF 0%, #EEF1F5 100%); border: 3px solid #D8DCE2; border-radius: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(20,34,48,0.12), inset 0 1px 0 rgba(255,255,255,0.9); overflow: hidden; padding: 0; }
+  .int-mid img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 15px; }
+  .int-mid img.is-illustration { object-fit: contain; padding: 8px; }
+  .int-right { flex: 2; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+  
+  .stat-row { display: flex; flex-direction: column; gap: 4px; }
+  .stat-label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; }
+  .stat-bar { width: 100%; height: 8px; background: #ddd; border-radius: 4px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1); }
+  .stat-fill { height: 100%; transition: width 0.3s; }
+  .stat-val { color: var(--text); }
+  .stat-val.r { color: var(--red); }
+  .stat-val.g { color: var(--darkgreen); font-size: 12px; }
+
+  /* DIALOGUE UI */
+  .dialogue-box { display: flex; align-items: center; background: var(--bg); border-radius: 16px; padding: 16px; margin-bottom: 20px; border: 2px solid var(--border); }
+  .dialogue-avatar { font-size: 40px; margin-right: 16px; background: #fff; border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.08); flex-shrink: 0; }
+  .dialogue-text { font-size: 14px; color: var(--text); line-height: 1.6; font-style: italic; font-weight: 500; }
+
+  /* ADOPTION SCREEN STYLES */
+  .adoption-list { display: flex; gap: 12px; overflow-x: auto; padding: 10px 5px 20px; margin: 10px 0; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; justify-content: flex-start; }
+  .pet-card { flex: 0 0 90px; height: 110px; background: #fff; border: 2px solid var(--green); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+  .pet-card.lost { background: #e0e0e0; border-color: #999; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); }
+  .pet-emoji { font-size: 42px; margin-bottom: 4px; }
+  .pet-status { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--darkgreen); }
+  .pet-card.lost .pet-status { color: #666; }
+
+  @media (max-width: 650px) {
+    .interaction-layout { flex-direction: column; }
+    .int-mid { height: 180px; width: 180px; margin: 0 auto; }
+  }
+</style>
+</head>
+<body>
+
+<div id="intro" class="screen active">
+  <div class="card">
+    <div class="icon">🌍</div>
+    <div class="title">Energy Detective: Campaign</div>
+    <div class="sub">Progress through 5 unique stages uncovering hidden energy waste to save money and the planet!</div>
+    <div class="how-box">
+      <div class="how-title">How to play</div>
+      <div class="how-item">🕹️ Use Joystick or WASD to move</div>
+      <div class="how-item">🔎 Find 5 energy problems per stage</div>
+      <div class="how-item">👆 Tap [E] near spots, furniture, or characters to interact</div>
+      <div class="how-item">🧒 <b>Watch out for the Neighbor Kids!</b> Different kids show up each area — some are good (fix things) and some are sneaky (break things). Kick them out by pressing [E] near them.</div>
+    </div>
+    <button class="btn" onclick="startGame()">Start Campaign →</button>
+  </div>
+</div>
+
+<div id="stagescreen" class="screen">
+  <div class="card">
+    <div class="icon" id="stage-icon">🗺️</div>
+    <div class="title" id="stage-title">Stage Complete!</div>
+    <div class="sub" id="stage-sub">You have cleared this area.</div>
+    <button class="btn" onclick="loadNextStage()">Proceed to Next Stage →</button>
+  </div>
+</div>
+
+<div id="gamescreen" class="screen">
+  <div id="hud">
+    <div class="hc"><div class="hl">Stage</div><div class="hv b" id="hstage">1/5</div></div>
+    <div class="hc"><div class="hl">Fixed</div><div class="hv" id="hfound">0/5</div></div>
+    <div class="hc"><div class="hl">Saved</div><div class="hv g" id="hsave">RM 0</div></div>
+    <div class="hc"><div class="hl">Score</div><div class="hv" id="hscore">0 pts</div></div>
+  </div>
+  <div id="canvas-wrap"><canvas id="cv"></canvas></div>
+  <div id="msgbar">Find the 5 energy problems in this stage!</div>
+  <div id="controls">
+    <div id="joy-zone"><div id="joy-stick"></div></div>
+    <button id="btn-e" onclick="interact()">E<div id="btn-e-label">Check</div></button>
+  </div>
+</div>
+
+<div id="adoptionscreen" class="screen">
+  <div class="card" style="max-width: 500px; padding: 24px 16px;">
+    <div class="icon">🏡</div>
+    <div class="title">Animal Sanctuary</div>
+    <div class="sub">Look at the animals you successfully adopted!</div>
+    <div class="adoption-list" id="adoption-list"></div>
+    <button class="btn" onclick="showWin()">See Final Score →</button>
+  </div>
+</div>
+
+<div id="winscreen" class="screen">
+  <div class="card">
+    <div class="icon">🏆</div>
+    <div class="title">Campaign Complete!</div>
+    <div class="sub">You have mastered electrical energy literacy across the entire city!</div>
+    <div class="how-box" style="text-align: center;">
+      <div class="how-item">Total Savings: <strong style="color:var(--darkgreen); font-size:18px;" id="ws-save"></strong></div>
+      <div class="how-item">Final Score: <strong style="color:var(--blue); font-size:18px;" id="ws-score"></strong></div>
+    </div>
+    <button class="btn" onclick="location.reload()">Play Again</button>
+  </div>
+</div>
+
+<div id="challenge-overlay"><div class="challenge-sheet" id="challenge-sheet"></div></div>
+
+<script>
+var cv = document.getElementById('cv');
+var ctx = cv.getContext('2d');
+var W, H, T, animFrame;
+var tick = 0, gstate = 'playing', activeSpot = null, activePet = null;
+
+// Global Progress
+var currentStageIdx = 0;
+var totalScore = 0;
+var totalSavings = 0;
+var lostPetEmojis = []; 
+
+// Neighbor Kid State
+var stagesWithKid = [];
+// Several different neighbor kid models so it isn't always the same child
+var kidModels = [
+  { emoji: '🧒', skin: '#F5C4B3', hair: '#5a3000', shirt: '#E24B4A', name: 'Sam' },
+  { emoji: '👦', skin: '#8D5524', hair: '#1a1a1a', shirt: '#185FA5', name: 'Leo' },
+  { emoji: '👧', skin: '#FFDBAC', hair: '#7a4b12', shirt: '#EF9F27', name: 'Mia' },
+  { emoji: '🧑', skin: '#C68642', hair: '#3a2400', shirt: '#1D9E75', name: 'Ari' },
+  { emoji: '👨‍🦱', skin: '#E0AC69', hair: '#2b1700', shirt: '#7B4FB5', name: 'Theo' },
+  { emoji: '👩‍🦰', skin: '#F1C27D', hair: '#A8431E', shirt: '#0FA3B1', name: 'Ivy' }
+];
+var kid = { active: false, x: 5, y: 5, radius: 0.4, speed: 0.05, type: 'good', interactionsLeft: 2, emoji: '🧒', model: null, state: 'idle', target: null, timer: 0, path: null };
+var tempMsg = "", tempMsgTimer = 0;
+
+// Stage Progress
+var stageFixedCount = 0;
+var currentChallengeChoices = []; 
+var currentPets = []; 
+var currentDoors = []; 
+
+// Physics State
+var player = { x: 5, y: 5, radius: 0.35, moving: false, dirAngle: 0, faceDir: 1 };
+var keys = { w:0, a:0, s:0, d:0, ArrowUp:0, ArrowDown:0, ArrowLeft:0, ArrowRight:0 };
+var joyX = 0, joyY = 0;
+
+// Grid size
+var COLS = 25, ROWS = 25; 
+var wallSet = {};
+
+// ==========================================
+// 5 STAGES DATABASE 
+// ==========================================
+var gameData = [
+  // STAGE 1: THE HOUSE
+  {
+    name: "The House", icon: "🏠", bg: "#2C2C2A", startX: 6, startY: 6,
+    rooms: [
+      {label:'Living room', x:1, y:1, w:12, h:11, rc:'#F8F6F0', pt:'lines'},
+      {label:'Kitchen', x:14, y:1, w:10, h:11, rc:'#FDF6EE', pt:'check'},
+      {label:'Bedroom', x:1, y:13, w:23, h:11, rc:'#F5F0FA', pt:'dots'}
+    ],
+    furniture: [
+      {x:2,y:2,w:3,h:2,c:'#C0DD97', e:'🛋️', lbl:'Sofa'},
+      {x:9,y:2,w:3,h:2,c:'#B5D4F4', e:'📺', lbl:'TV'},
+      {x:16,y:2,w:3,h:3,c:'#D3D1C7', e:'🍳', lbl:'Stove'}, 
+      {x:2,y:15,w:4,h:4,c:'#CECBF6', e:'🛏️', lbl:'Bed'}
+    ],
+    decor: [
+      {x:1,y:6,w:3,h:3,e:'🟧'}, 
+      {x:22,y:14,w:2,h:2,e:'🪴'}
+    ],
+    pets: [
+      { x: 5, y: 5, radius: 0.4, baseVx: 0.05, baseVy: 0.03, emoji: '🐈' },
+      { x: 18, y: 18, radius: 0.4, baseVx: -0.06, baseVy: 0.05, emoji: '🐕' }
+    ],
+    spots: [
+      {x:3, y:3, w:2, h:2, label:'AC Unit', danger:true, e:'❄',
+       situation:'AC is set to 16°C and running empty.', choices:['Set to 25°C with timer','Turn to 14°C','Leave it alone'], goodIdx:0, gout:'25°C is ideal!', bout:'Colder is not faster.', fact:'Each degree below 25°C adds 6% energy use.', savings:25, pts:100},
+      {x:20, y:5, w:2, h:2, label:'Water Heater', danger:true, e:'🚿', 
+       situation:'Storage heater is ON 24/7.', choices:['Switch off until needed','Keep on for standby','Max thermostat'], goodIdx:0, gout:'On-demand saves money.', bout:'Standby uses massive power.', fact:'Heaters are 25% of the bill.', savings:30, pts:100},
+      {x:20, y:2, w:2, h:2, label:'Fridge', danger:true, e:'🧊',
+       situation:'Broken seal leaking cold air.', choices:['Replace seal','Set to max cold','Add ice bags'], goodIdx:0, gout:'New seal stops 30% extra compressor work.', bout:'Max cold wastes more power.', fact:'Check seals with a piece of paper.', savings:15, pts:100},
+      {x:10, y:18, w:2, h:2, label:'Bulbs', danger:true, e:'💡',
+       situation:'Old 60W incandescent bulbs.', choices:['Replace with LED','Replace with Halogen','Leave them'], goodIdx:0, gout:'LEDs use 85% less energy.', bout:'Halogen is inefficient.', fact:'LEDs last 25x longer.', savings:12, pts:100},
+      {x:5, y:18, w:2, h:2, label:'Standby Tech', danger:true, e:'🔌',
+       situation:'6 devices left on standby overnight.', choices:['Use switched power strip','Unplug only TV','Leave them'], goodIdx:0, gout:'Kills vampire power!', bout:'All devices drain power.', fact:'Standby is 10-15% of your bill.', savings:18, pts:100}
+    ]
+  },
+  // STAGE 2: THE GARDEN
+  {
+    name: "The Garden", icon: "🌳", bg: "#1e3321", startX: 5, startY: 8,
+    rooms: [
+      {label:'Patio', x:1, y:1, w:10, h:10, rc:'#D8CCC0', pt:'check'},
+      {label:'Lawn', x:12, y:1, w:12, h:23, rc:'#A9D18E', pt:'dots'},
+      {label:'Shed', x:1, y:12, w:10, h:12, rc:'#C2B2A3', pt:'lines'}
+    ],
+    furniture: [
+      {x:2,y:2,w:3,h:3,c:'#a09080', e:'🪑', lbl:'Table'},
+      {x:17,y:4,w:4,h:4,c:'#609040', e:'🌲', lbl:'Tree'}, 
+      {x:16,y:16,w:6,h:4,c:'#609040', e:'🌻', lbl:'Flowers'},
+      {x:2,y:14,w:4,h:3,c:'#807060', e:'🧰', lbl:'Tools'}
+    ],
+    decor: [
+      {x:2,y:7,w:2,h:2,e:'🌿'}, 
+      {x:16,y:16,w:6,h:4,e:'🌻'}
+    ],
+    pets: [
+      { x: 15, y: 10, radius: 0.4, baseVx: 0.02, baseVy: 0.01, emoji: '🐢' },
+      { x: 18, y: 18, radius: 0.4, baseVx: -0.06, baseVy: 0.06, emoji: '🦋' }
+    ],
+    spots: [
+      {x:5, y:4, w:2, h:2, label:'Floodlights', danger:true, e:'🔦',
+       situation:'Halogen floodlights ON all day.', choices:['Install LED motion sensors','Paint bulbs darker','Leave them ON for safety'], goodIdx:0, gout:'Motion sensors give security with less power.', bout:'Halogen wastes massive energy.', fact:'Outdoor LEDs save up to 90% energy.', savings:20, pts:100},
+      {x:14, y:10, w:2, h:2, label:'Sprinklers', danger:true, e:'⛲',
+       situation:'Sprinklers running at high noon.', choices:['Timer for early morning','Water more at noon','Run 24/7'], goodIdx:0, gout:'Morning watering prevents evaporation waste.', bout:'Noon watering evaporates instantly.', fact:'Pumping water takes massive electricity.', savings:10, pts:100},
+      {x:4, y:16, w:2, h:2, label:'Electric Mower', danger:true, e:'🔌',
+       situation:'Mower left plugged in 24/7.', choices:['Unplug when charged','Leave plugged in','Charge slightly daily'], goodIdx:0, gout:'Prevents battery degradation and vampire draw.', bout:'Constant trickle charge wastes energy.', fact:'Unplug chargers once 100%.', savings:5, pts:100},
+      {x:18, y:5, w:2, h:2, label:'Pool Pump', danger:true, e:'⚙️',
+       situation:'Old pool pump running 24 hrs.', choices:['Use a timer for 6hrs/day','Keep running to stay clean','Add more chlorine'], goodIdx:0, gout:'Timers drastically cut heavy motor energy.', bout:'Pumps don\'t need 24/7 operation.', fact:'Pool pumps are massive energy hogs.', savings:40, pts:100},
+      {x:8, y:6, w:2, h:2, label:'Patio Heater', danger:true, e:'🔥',
+       situation:'Electric patio heater left ON empty.', choices:['Switch off immediately','Turn down to 50%','Leave on for later'], goodIdx:0, gout:'Never heat empty outdoor spaces.', bout:'Outdoor heating is highly inefficient.', fact:'Heating air outdoors dissipates instantly.', savings:25, pts:100}
+    ]
+  },
+  // STAGE 3: THE FACTORY
+  {
+    name: "The Factory", icon: "🏭", bg: "#2a2a35", startX: 12, startY: 9,
+    rooms: [
+      {label:'Assembly Line', x:1, y:1, w:23, h:12, rc:'#B0B0B5', pt:'lines'},
+      {label:'Storage', x:1, y:14, w:11, h:10, rc:'#A0A0A5', pt:'check'},
+      {label:'Manager Office', x:13, y:14, w:11, h:10, rc:'#C0C0C8', pt:'dots'}
+    ],
+    furniture: [
+      {x:2,y:3,w:8,h:3,c:'#707075', e:'⚙️', lbl:'Machine A'},
+      {x:14,y:3,w:8,h:3,c:'#707075', e:'⚙️', lbl:'Machine B'},
+      {x:2,y:18,w:5,h:5,c:'#808080', e:'📦', lbl:'Crates'}, 
+      {x:14,y:18,w:4,h:3,c:'#D0D0D5', e:'🖥️', lbl:'Desk'}
+    ],
+    decor: [
+      {x:21,y:20,w:2,h:2,e:'🛢️'}
+    ],
+    pets: [
+      { x: 10, y: 5, radius: 0.4, baseVx: 0.06, baseVy: 0.02, emoji: '🐦' },
+      { x: 5, y: 18, radius: 0.4, baseVx: -0.07, baseVy: 0.04, emoji: '🐁' }
+    ],
+    spots: [
+      {x:11, y:4, w:2, h:2, label:'Conveyor', danger:true, e:'🛤️',
+       situation:'Belt running with no products.', choices:['Install auto-shutoff sensors','Leave it running to avoid restarts','Grease it more'], goodIdx:0, gout:'Sensors stop massive idle motor waste.', bout:'Idle motors burn immense electricity.', fact:'Motor systems use 60% of industrial power.', savings:150, pts:100},
+      {x:6, y:7, w:2, h:2, label:'Air Compressor', danger:true, e:'💨',
+       situation:'Loud hissing from an air hose leak.', choices:['Patch the leak immediately','Turn up compressor pressure','Ignore it'], goodIdx:0, gout:'Fixed leaks save huge compressor energy.', bout:'Higher pressure wastes more energy.', fact:'Compressed air is the most expensive factory utility.', savings:80, pts:100},
+      {x:20, y:8, w:2, h:2, label:'Bay Doors', danger:true, e:'🚪',
+       situation:'Large loading door left open while AC is ON.', choices:['Close door / use strip curtains','Turn AC up higher','Open all doors for breeze'], goodIdx:0, gout:'Curtains keep expensive cooled air inside.', bout:'Cooling the outdoors is impossible.', fact:'HVAC escapes instantly from open bays.', savings:90, pts:100},
+      {x:20, y:15, w:2, h:2, label:'Office AC', danger:true, e:'❄', 
+       situation:'Manager office empty, AC freezing.', choices:['Turn off when empty','Leave ON for return','Add a space heater'], goodIdx:0, gout:'Never cool empty spaces.', bout:'Space heater + AC fights each other.', fact:'Zoned AC saves commercial power.', savings:30, pts:100},
+      {x:6, y:18, w:2, h:2, label:'High Bay Lights', danger:true, e:'💡',
+       situation:'Old metal halide warehouse lights.', choices:['Retrofit with High-Bay LEDs','Remove half the bulbs','Keep them'], goodIdx:0, gout:'LED retrofits save 60% lighting costs.', bout:'Removing bulbs causes safety issues.', fact:'Industrial LEDs pay for themselves in 1 year.', savings:120, pts:100}
+    ]
+  },
+  // STAGE 4: THE OFFICE
+  {
+    name: "The Office", icon: "🏢", bg: "#303a45", startX: 10, startY: 10,
+    rooms: [
+      {label:'Cubicles', x:1, y:1, w:15, h:15, rc:'#E8ECEF', pt:'check'},
+      {label:'Meeting Room', x:17, y:1, w:7, h:10, rc:'#DFE4E8', pt:'lines'},
+      {label:'Break Room', x:17, y:12, w:7, h:12, rc:'#F0EAE1', pt:'check'},
+      {label:'Hallway', x:1, y:17, w:15, h:7, rc:'#D0D5D8', pt:'dots'}
+    ],
+    furniture: [
+      {x:2,y:3,w:4,h:4,c:'#C0C5C8', e:'💻', lbl:'Desk 1'},
+      {x:8,y:3,w:4,h:4,c:'#C0C5C8', e:'💻', lbl:'Desk 2'},
+      {x:19,y:4,w:3,h:4,c:'#C0C5C8', e:'🗄️', lbl:'Table'}, 
+      {x:18,y:14,w:4,h:3,c:'#D0CACA', e:'☕', lbl:'Counter'}
+    ],
+    decor: [
+      {x:21,y:14,w:2,h:2,e:'🚰'}
+    ],
+    pets: [
+      { x: 5, y: 10, radius: 0.4, baseVx: 0.04, baseVy: 0.04, emoji: '🦮' },
+      { x: 19, y: 18, radius: 0.4, baseVx: -0.05, baseVy: 0.05, emoji: '🤖' }
+    ],
+    spots: [
+      {x:13, y:5, w:2, h:2, label:'Printers', danger:true, e:'🖨️',
+       situation:'3 laser printers left ON overnight.', choices:['Enable deep sleep mode','Leave them on to warm up','Unplug permanently'], goodIdx:0, gout:'Deep sleep cuts standby power by 90%.', bout:'Standby wastes commercial energy.', fact:'Commercial printers draw high idle power.', savings:45, pts:100},
+      {x:19, y:2, w:3, h:2, label:'Meeting Room', danger:true, e:'💡', 
+       situation:'Empty room, lights and projector ON.', choices:['Install occupancy sensors','Leave them on for next meeting','Remove the projector'], goodIdx:0, gout:'Sensors guarantee lights turn off.', bout:'Leaving them on wastes money.', fact:'Sensors save 30% of office lighting costs.', savings:35, pts:100},
+      {x:4, y:11, w:2, h:2, label:'PCs', danger:true, e:'🖥️',
+       situation:'Employee PCs left running screen savers.', choices:['Set PCs to sleep after 15 mins','Use darker screen savers','Turn off monitors only'], goodIdx:0, gout:'Sleep mode saves hardware and power.', bout:'Screen savers use FULL power.', fact:'Screen savers do NOT save energy.', savings:55, pts:100},
+      {x:19, y:20, w:2, h:2, label:'Vending Machine', danger:true, e:'🥤',
+       situation:'Vending lights/compressor run 24/7.', choices:['Install a VendingMiser sensor','Unplug it','Remove all lights'], goodIdx:0, gout:'Sensors power down machines when empty.', bout:'Unplugging ruins the food/drinks.', fact:'Vending machines use massive power 24/7.', savings:30, pts:100},
+      {x:5, y:19, w:2, h:2, label:'Elevator', danger:true, e:'🛗',
+       situation:'Staff taking elevator for 1 floor up.', choices:['Promote "Take the Stairs" campaign','Speed up the elevator','Limit to 5 people max'], goodIdx:0, gout:'Stairs improve health and save motor energy.', bout:'Speeding up uses more power.', fact:'Elevator motors draw heavy peak current.', savings:20, pts:100}
+    ]
+  },
+  // STAGE 5: THE CITY PARK
+  {
+    name: "The City Park", icon: "⛲", bg: "#152515", startX: 12, startY: 5,
+    rooms: [
+      {label:'Walkway', x:1, y:1, w:23, h:8, rc:'#B5A595', pt:'check'},
+      {label:'Pond Area', x:1, y:10, w:15, h:14, rc:'#85B5D5', pt:'dots'},
+      {label:'Gazebo', x:17, y:12, w:7, h:10, rc:'#D5C5B5', pt:'lines'}
+    ],
+    furniture: [
+      {x:4,y:3,w:3,h:2,c:'#958575', e:'🪑', lbl:'Bench'},
+      {x:14,y:3,w:3,h:2,c:'#958575', e:'🪑', lbl:'Bench'},
+      {x:6,y:14,w:5,h:5,c:'#6595B5', e:'💧', lbl:'Water'},
+      {x:19,y:15,w:3,h:3,c:'#B5A595', e:'🛖', lbl:'Table'} 
+    ],
+    decor: [
+      {x:14,y:6,w:2,h:2,e:'🧺'}
+    ],
+    pets: [
+      { x: 8, y: 16, radius: 0.4, baseVx: 0.04, baseVy: 0.02, emoji: '🦆' },
+      { x: 4, y: 20, radius: 0.4, baseVx: -0.06, baseVy: 0.05, emoji: '🐸' }
+    ],
+    spots: [
+      {x:10, y:4, w:2, h:2, label:'Streetlights', danger:true, e:'💡',
+       situation:'Streetlights are ON during bright daylight.', choices:['Fix the daylight photocell sensor','Remove half the bulbs','Keep them on for extra safety'], goodIdx:0, gout:'Photocells automate lights perfectly.', bout:'Daylight lighting is 100% wasted.', fact:'City lighting is a massive municipal cost.', savings:200, pts:100},
+      {x:8, y:15, w:2, h:2, label:'Fountain', danger:true, e:'⛲',
+       situation:'Huge water pump runs at 3 AM.', choices:['Timer for active park hours only','Run it faster to clean water','Turn it off forever'], goodIdx:0, gout:'Timers save massive public funds.', bout:'Running faster wastes more.', fact:'Industrial water pumps draw immense power.', savings:150, pts:100},
+      {x:2, y:5, w:2, h:2, label:'E-Bike Dock', danger:true, e:'🚲',
+       situation:'Chargers supplying power to full bikes.', choices:['Smart docks that stop when 100%','Unplug the whole station','Lower the charging speed'], goodIdx:0, gout:'Smart charging protects batteries & grid.', bout:'Lower speed just takes longer.', fact:'Overcharging degrades lithium batteries.', savings:40, pts:100},
+      {x:20, y:13, w:2, h:2, label:'Public Fridge', danger:true, e:'🧊', 
+       situation:'Community fridge door left wide open.', choices:['Add a self-closing spring hinge','Turn up the thermostat','Unplug it'], goodIdx:0, gout:'Self-closing doors guarantee efficiency.', bout:'Turning it up ruins food.', fact:'Open fridges run compressors endlessly.', savings:30, pts:100},
+      {x:20, y:4, w:2, h:2, label:'Trash Bins', danger:true, e:'♻️',
+       situation:'Aluminum cans thrown in regular trash.', choices:['Install clear recycling bins','Burn the trash','Compact the trash more'], goodIdx:0, gout:'Recycling aluminum saves 95% energy!', bout:'Burning creates toxic emissions.', fact:'Making new aluminum takes massive electricity.', savings:80, pts:100}
+    ]
+  }
+];
+
+// Custom Furniture Dialogue Responses
+var furnMsgs = {
+  'Sofa': 'You sink into the Sofa. So comfortable and relaxing!',
+  'TV': 'You watch a few minutes of a fun show. Entertaining!',
+  'Stove': 'You admire the clean Stove. Smells like good food was cooked here.',
+  'Bed': 'You take a quick rest on the Bed. So cozy!',
+  'Desk': 'You sit at the Desk and quickly organize some papers.',
+  'Table': 'You sit at the Table. It is sturdy and clean.',
+  'Tree': 'You stand under the Tree and enjoy the fresh shade.',
+  'Flowers': 'You smell the Flowers. They are blooming beautifully!',
+  'Tools': 'You inspect the Tools. Everything is organized.',
+  'Machine A': 'The machine is humming along smoothly.',
+  'Machine B': 'The gears are turning perfectly.',
+  'Crates': 'Just some heavy wooden crates.',
+  'Desk 1': 'A tidy workspace ready for productivity.',
+  'Desk 2': 'Someone left a neat stack of files here.',
+  'Counter': 'A clean counter, perfect for making a cup of coffee.',
+  'Bench': 'You sit on the Bench and watch the world go by.',
+  'Water': 'You splash some cool water. Refreshing!'
+
+};
+
+function svgDataUri(svg) {
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+}
+
+// Generic display names + species/breed "model" labels for the animals.
+// e.g. shown as "Whiskers · Cat (Tabby)". Names are picked per-encounter.
+var animalInfo = {
+  '🐈': { species: 'Cat',     model: 'Tabby',            names: ['Whiskers','Mochi','Tiger','Luna'] },
+  '🐕': { species: 'Dog',     model: 'Mixed Breed',      names: ['Buddy','Rocky','Bella','Max'] },
+  '🦮': { species: 'Dog',     model: 'Guide Retriever',  names: ['Scout','Cooper','Daisy','Ranger'] },
+  '🐢': { species: 'Tortoise',model: 'Garden Tortoise',  names: ['Shelly','Speedy','Pokey','Tank'] },
+  '🦋': { species: 'Butterfly',model: 'Monarch',         names: ['Flutter','Sunny','Iris','Pip'] },
+  '🐦': { species: 'Bird',    model: 'Songbird',         names: ['Pip','Sky','Robin','Echo'] },
+  '🐁': { species: 'Mouse',   model: 'House Mouse',      names: ['Squeak','Nibbles','Gus','Pip'] },
+  '🤖': { species: 'Robot',   model: 'Office Bot v2',    names: ['Beep','Circuit','Bolt','Chip'] },
+  '🦆': { species: 'Duck',    model: 'Mallard',          names: ['Quackers','Puddles','Waddle','Pip'] },
+  '🐸': { species: 'Frog',    model: 'Pond Frog',        names: ['Hopper','Lily','Croak','Pip'] }
+};
+function makeAnimalLabel(emoji) {
+  var info = animalInfo[emoji];
+  if (!info) return { name: 'Critter', species: 'Animal', model: 'Wild', label: 'Critter · Animal' };
+  var name = info.names[Math.floor(Math.random() * info.names.length)];
+  return { name: name, species: info.species, model: info.model, label: name + ' · ' + info.species + ' (' + info.model + ')' };
+}
+
+function makeVisualCard(title, subtitle, body, opts) {
+  opts = opts || {};
+  var top = opts.top || '#F3F4F6';
+  var bottom = opts.bottom || '#E5E7EB';
+  var accent = opts.accent || '#2563EB';
+  return svgDataUri(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320">' +
+      '<defs>' +
+        '<linearGradient id="bg" x1="0" y1="0" x2="0.3" y2="1">' +
+          '<stop offset="0%" stop-color="' + top + '"/>' +
+          '<stop offset="100%" stop-color="' + bottom + '"/>' +
+        '</linearGradient>' +
+        '<radialGradient id="glow" cx="0.5" cy="0.42" r="0.6">' +
+          '<stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>' +
+          '<stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>' +
+        '</radialGradient>' +
+        '<linearGradient id="accentbar" x1="0" y1="0" x2="1" y2="0">' +
+          '<stop offset="0%" stop-color="' + accent + '"/>' +
+          '<stop offset="100%" stop-color="' + accent + '" stop-opacity="0.55"/>' +
+        '</linearGradient>' +
+        '<filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">' +
+          '<feDropShadow dx="0" dy="9" stdDeviation="9" flood-color="#1a2230" flood-opacity="0.22"/>' +
+        '</filter>' +
+        '<filter id="soft" x="-20%" y="-20%" width="140%" height="140%">' +
+          '<feGaussianBlur stdDeviation="0.4"/>' +
+        '</filter>' +
+      '</defs>' +
+      // background panel
+      '<rect width="320" height="320" rx="40" fill="url(#bg)"/>' +
+      '<rect x="3" y="3" width="314" height="314" rx="37" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="2"/>' +
+      // ambient lighting + decorative bubbles
+      '<rect width="320" height="240" rx="40" fill="url(#glow)"/>' +
+      '<circle cx="250" cy="52" r="20" fill="#ffffff" opacity="0.30"/>' +
+      '<circle cx="70" cy="60" r="11" fill="' + accent + '" opacity="0.18"/>' +
+      '<circle cx="286" cy="120" r="6" fill="' + accent + '" opacity="0.22"/>' +
+      // soft pedestal under the device
+      '<ellipse cx="160" cy="214" rx="96" ry="20" fill="#1a2230" opacity="0.07"/>' +
+      // the device illustration
+      '<g filter="url(#shadow)">' + body + '</g>' +
+      // label plate
+      '<rect x="18" y="244" width="284" height="60" rx="20" fill="#ffffff" opacity="0.92"/>' +
+      '<rect x="18" y="244" width="6" height="60" rx="3" fill="url(#accentbar)"/>' +
+      '<text x="166" y="270" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#20262F">' + title + '</text>' +
+      '<text x="166" y="291" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" fill="#5E6A76">' + subtitle + '</text>' +
+    '</svg>'
+  );
+}
+
+var spotVisualLibrary = {
+  ac: makeVisualCard('Cooling Control', 'AC / cooling efficiency',
+    '<rect x="70" y="86" width="180" height="58" rx="18" fill="#F9FAFB" stroke="#CBD5E1" stroke-width="6"/>' +
+    '<rect x="90" y="102" width="48" height="8" rx="4" fill="#93C5FD"/>' +
+    '<circle cx="220" cy="114" r="9" fill="#2563EB" opacity="0.85"/>' +
+    '<g stroke="#3B82F6" stroke-width="9" stroke-linecap="round"><path d="M110 156 L95 178"/><path d="M150 156 L150 183"/><path d="M190 156 L205 178"/></g>' +
+    '<circle cx="76" cy="182" r="13" fill="#DBEAFE"/><path d="M76 168 L79 178 L90 178 L81 184 L84 195 L76 188 L68 195 L71 184 L62 178 L73 178 Z" fill="#60A5FA"/>',
+    {top:'#EFF8FF', bottom:'#D9EEFF', accent:'#3B82F6'}),
+  waterheater: makeVisualCard('Water Heater', 'On-demand hot water',
+    '<rect x="124" y="78" width="70" height="126" rx="30" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="6"/>' +
+    '<rect x="142" y="103" width="34" height="52" rx="12" fill="#E2E8F0"/>' +
+    '<circle cx="159" cy="172" r="10" fill="#F97316"/>' +
+    '<path d="M216 86 C242 86 248 112 230 125 L188 166" fill="none" stroke="#9CA3AF" stroke-width="16" stroke-linecap="round"/>' +
+    '<g fill="#60A5FA"><path d="M210 162 C204 171 204 177 210 184 C216 177 216 171 210 162Z"/><path d="M225 175 C219 184 219 190 225 197 C231 190 231 184 225 175Z"/><path d="M240 162 C234 171 234 177 240 184 C246 177 246 171 240 162Z"/></g>',
+    {top:'#F3F4F6', bottom:'#E5E7EB', accent:'#F97316'}),
+  fridge: makeVisualCard('Cold Storage', 'Fridge door sealing',
+    '<rect x="110" y="68" width="100" height="150" rx="22" fill="#E8F1FB" stroke="#8FB5DA" stroke-width="6"/>' +
+    '<line x1="116" y1="140" x2="204" y2="140" stroke="#8FB5DA" stroke-width="5"/>' +
+    '<rect x="191" y="109" width="8" height="22" rx="4" fill="#5B87B6"/><rect x="191" y="154" width="8" height="33" rx="4" fill="#5B87B6"/>' +
+    '<path d="M216 102 C246 110 247 148 214 160" fill="none" stroke="#60A5FA" stroke-width="10" stroke-linecap="round" stroke-dasharray="10 10"/>',
+    {top:'#EEF6FF', bottom:'#DCEEFF', accent:'#60A5FA'}),
+  lighting: makeVisualCard('Lighting', 'Efficient LED upgrade',
+    '<path d="M160 84 C129 84 104 109 104 140 C104 163 117 180 131 191 C138 197 140 202 142 210 L178 210 C180 202 182 197 189 191 C203 180 216 163 216 140 C216 109 191 84 160 84Z" fill="#FDE68A" stroke="#F59E0B" stroke-width="7"/>' +
+    '<rect x="144" y="210" width="32" height="18" rx="8" fill="#94A3B8"/>' +
+    '<rect x="140" y="228" width="40" height="14" rx="7" fill="#64748B"/>' +
+    '<g stroke="#FBBF24" stroke-width="7" stroke-linecap="round"><path d="M160 60 L160 42"/><path d="M115 78 L102 64"/><path d="M205 78 L218 64"/></g>',
+    {top:'#FFF8DC', bottom:'#FDE68A', accent:'#F59E0B'}),
+  plug: makeVisualCard('Plug Load', 'Reduce standby drain',
+    '<rect x="108" y="94" width="104" height="96" rx="24" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="6"/>' +
+    '<rect x="134" y="110" width="12" height="36" rx="6" fill="#1F2937"/><rect x="174" y="110" width="12" height="36" rx="6" fill="#1F2937"/>' +
+    '<path d="M160 186 L160 218 C160 232 171 244 184 244" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round"/>' +
+    '<circle cx="196" cy="244" r="10" fill="#2563EB"/>' +
+    '<path d="M210 244 L238 244" stroke="#2563EB" stroke-width="10" stroke-linecap="round"/>',
+    {top:'#F1F5F9', bottom:'#DCE7F5', accent:'#2563EB'}),
+  water: makeVisualCard('Water System', 'Timers and smart control',
+    '<circle cx="160" cy="138" r="58" fill="#DBEAFE" stroke="#60A5FA" stroke-width="6"/>' +
+    '<path d="M160 84 C130 124 122 139 122 156 C122 177 139 194 160 194 C181 194 198 177 198 156 C198 139 190 124 160 84Z" fill="#60A5FA" opacity="0.95"/>' +
+    '<path d="M226 124 L245 105" stroke="#64748B" stroke-width="10" stroke-linecap="round"/>' +
+    '<circle cx="250" cy="101" r="14" fill="#94A3B8"/>',
+    {top:'#EAF7FF', bottom:'#D8EDFF', accent:'#60A5FA'}),
+  heat: makeVisualCard('Heating', 'Avoid heating empty space',
+    '<rect x="110" y="96" width="100" height="92" rx="24" fill="#374151" stroke="#111827" stroke-width="6"/>' +
+    '<g stroke="#F97316" stroke-width="10" stroke-linecap="round"><path d="M132 175 C132 155 144 147 144 130"/><path d="M160 175 C160 150 173 140 173 120"/><path d="M188 175 C188 157 199 149 199 133"/></g>' +
+    '<rect x="126" y="188" width="68" height="18" rx="9" fill="#9CA3AF"/>',
+    {top:'#FFF1E6', bottom:'#FFD7B5', accent:'#F97316'}),
+  industrial: makeVisualCard('Industrial Load', 'Smart process control',
+    '<circle cx="132" cy="144" r="40" fill="#9CA3AF"/><circle cx="132" cy="144" r="16" fill="#E5E7EB"/>' +
+    '<path d="M132 94 L142 112 L162 110 L156 130 L172 144 L156 158 L162 178 L142 176 L132 194 L122 176 L102 178 L108 158 L92 144 L108 130 L102 110 L122 112 Z" fill="#6B7280"/>' +
+    '<rect x="184" y="112" width="46" height="70" rx="10" fill="#CBD5E1" stroke="#64748B" stroke-width="5"/>' +
+    '<line x1="194" y1="130" x2="220" y2="130" stroke="#64748B" stroke-width="5"/><line x1="194" y1="145" x2="220" y2="145" stroke="#64748B" stroke-width="5"/><line x1="194" y1="160" x2="214" y2="160" stroke="#64748B" stroke-width="5"/>',
+    {top:'#EEF2F7', bottom:'#D9E0E7', accent:'#6B7280'}),
+  office: makeVisualCard('Office Equipment', 'Use sleep and sensors',
+    '<rect x="92" y="96" width="136" height="82" rx="14" fill="#E2E8F0" stroke="#94A3B8" stroke-width="6"/>' +
+    '<rect x="108" y="112" width="104" height="50" rx="8" fill="#1E293B"/>' +
+    '<rect x="144" y="184" width="32" height="14" rx="7" fill="#94A3B8"/>' +
+    '<rect x="126" y="198" width="68" height="12" rx="6" fill="#64748B"/>' +
+    '<circle cx="238" cy="117" r="18" fill="#3B82F6" opacity="0.25"/><circle cx="244" cy="117" r="10" fill="#60A5FA"/>',
+    {top:'#F4F7FB', bottom:'#E4ECF4', accent:'#3B82F6'}),
+  printer: makeVisualCard('Printers', 'Enable deep sleep mode',
+    '<path d="M118 88 L214 88 L236 108 L222 124 L124 124 Z" fill="#F8FAFC" stroke="#111827" stroke-width="5"/>' +
+    '<path d="M150 58 L232 84 L220 98 L144 74 Z" fill="#FFFFFF" stroke="#111827" stroke-width="5"/>' +
+    '<rect x="100" y="122" width="134" height="76" rx="12" fill="#E5E7EB" stroke="#111827" stroke-width="5"/>' +
+    '<rect x="89" y="188" width="76" height="28" rx="5" fill="#D1D5DB" stroke="#111827" stroke-width="5"/>' +
+    '<path d="M92 187 L150 169 L186 181 L127 200 Z" fill="#F9FAFB" stroke="#111827" stroke-width="4"/>' +
+    '<path d="M102 190 L137 179" stroke="#9CA3AF" stroke-width="3"/><path d="M108 198 L145 186" stroke="#9CA3AF" stroke-width="3"/>' +
+    '<rect x="120" y="148" width="26" height="8" rx="2" fill="#F59E0B"/>' +
+    '<circle cx="205" cy="164" r="5" fill="#EF4444"/><circle cx="218" cy="164" r="5" fill="#10B981"/><circle cx="231" cy="164" r="5" fill="#3B82F6"/>' +
+    '<circle cx="180" cy="176" r="2.5" fill="#4B5563"/><circle cx="188" cy="176" r="2.5" fill="#4B5563"/><circle cx="196" cy="176" r="2.5" fill="#4B5563"/>',
+    {top:'#F7F7F7', bottom:'#E7EAEE', accent:'#F59E0B'}),
+  pc: makeVisualCard('Desktop PCs', 'Put computers to sleep',
+    '<rect x="86" y="92" width="148" height="90" rx="14" fill="#E2E8F0" stroke="#94A3B8" stroke-width="6"/>' +
+    '<rect x="102" y="106" width="116" height="60" rx="8" fill="#102033"/>' +
+    '<rect x="147" y="184" width="26" height="14" rx="5" fill="#94A3B8"/>' +
+    '<rect x="130" y="198" width="60" height="11" rx="5" fill="#64748B"/>' +
+    '<rect x="228" y="118" width="34" height="82" rx="8" fill="#CBD5E1" stroke="#64748B" stroke-width="5"/>' +
+    '<circle cx="245" cy="188" r="6" fill="#22C55E"/>',
+    {top:'#EEF3F8', bottom:'#DDE6F0', accent:'#3B82F6'}),
+  vending: makeVisualCard('Vending Machine', 'Sensor-controlled standby',
+    '<rect x="110" y="72" width="100" height="152" rx="18" fill="#F8FAFC" stroke="#94A3B8" stroke-width="6"/>' +
+    '<rect x="126" y="92" width="68" height="82" rx="10" fill="#1F2937"/>' +
+    '<g fill="#60A5FA"><rect x="134" y="102" width="20" height="24" rx="4"/><rect x="166" y="102" width="20" height="24" rx="4"/><rect x="134" y="136" width="20" height="24" rx="4"/><rect x="166" y="136" width="20" height="24" rx="4"/></g>' +
+    '<rect x="126" y="182" width="52" height="16" rx="8" fill="#CBD5E1"/><circle cx="194" cy="190" r="8" fill="#FBBF24"/>',
+    {top:'#F3F7FB', bottom:'#E0E7F0', accent:'#60A5FA'}),
+  elevator: makeVisualCard('Lift Usage', 'Take the stairs when possible',
+    '<rect x="108" y="72" width="104" height="156" rx="16" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="6"/>' +
+    '<line x1="160" y1="80" x2="160" y2="220" stroke="#9CA3AF" stroke-width="5"/>' +
+    '<path d="M140 116 L151 100 L162 116 Z" fill="#2563EB"/><path d="M179 184 L168 200 L157 184 Z" fill="#2563EB"/>' +
+    '<rect x="129" y="142" width="20" height="36" rx="8" fill="#CBD5E1"/><rect x="171" y="142" width="20" height="36" rx="8" fill="#CBD5E1"/>',
+    {top:'#F5F6F7', bottom:'#E5E7EB', accent:'#2563EB'}),
+  recycle: makeVisualCard('Recycling', 'Sort waste correctly',
+    '<rect x="118" y="108" width="84" height="96" rx="16" fill="#22C55E" stroke="#15803D" stroke-width="6"/>' +
+    '<rect x="108" y="94" width="104" height="18" rx="9" fill="#16A34A"/>' +
+    '<path d="M162 130 L178 158 L146 158 Z" fill="#DCFCE7"/><path d="M140 160 L156 188 L124 188 Z" fill="#DCFCE7"/><path d="M184 160 L200 188 L168 188 Z" fill="#DCFCE7"/>',
+    {top:'#ECFDF5', bottom:'#D1FAE5', accent:'#22C55E'}),
+  officeac: makeVisualCard('Office AC', 'Cooling in office area',
+    '<rect x="66" y="94" width="188" height="56" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="6"/>' +
+    '<rect x="84" y="108" width="54" height="8" rx="4" fill="#93C5FD"/>' +
+    '<circle cx="228" cy="121" r="10" fill="#2563EB" opacity="0.85"/>' +
+    '<g stroke="#3B82F6" stroke-width="9" stroke-linecap="round"><path d="M108 160 L96 180"/><path d="M160 160 L160 184"/><path d="M212 160 L224 180"/></g>' +
+    '<rect x="98" y="196" width="124" height="18" rx="8" fill="#CBD5E1"/>',
+    {top:'#EFF6FF', bottom:'#DBEAFE', accent:'#2563EB'}),
+  publicfridge: makeVisualCard('Public Fridge', 'Keep the door sealed',
+    '<rect x="108" y="64" width="104" height="160" rx="22" fill="#F0F7FF" stroke="#8FB5DA" stroke-width="6"/>' +
+    '<line x1="114" y1="140" x2="206" y2="140" stroke="#8FB5DA" stroke-width="5"/>' +
+    '<rect x="194" y="104" width="8" height="24" rx="4" fill="#5B87B6"/><rect x="194" y="156" width="8" height="34" rx="4" fill="#5B87B6"/>' +
+    '<rect x="122" y="84" width="28" height="36" rx="6" fill="#DBEAFE"/><rect x="156" y="84" width="28" height="36" rx="6" fill="#BFDBFE"/>' +
+    '<path d="M218 104 C244 112 246 150 216 164" fill="none" stroke="#60A5FA" stroke-width="10" stroke-linecap="round" stroke-dasharray="10 10"/>',
+    {top:'#EEF7FF', bottom:'#DCEEFF', accent:'#60A5FA'}),
+  highbay: makeVisualCard('High Bay Lights', 'Use efficient warehouse lighting',
+    '<rect x="92" y="84" width="136" height="18" rx="9" fill="#6B7280"/>' +
+    '<path d="M112 102 L208 102 L188 148 L132 148 Z" fill="#D1D5DB" stroke="#6B7280" stroke-width="5"/>' +
+    '<path d="M120 148 Q160 178 200 148" fill="#FDE68A" opacity="0.85"/>' +
+    '<g stroke="#FBBF24" stroke-width="7" stroke-linecap="round"><path d="M138 160 L124 182"/><path d="M160 164 L160 188"/><path d="M182 160 L196 182"/></g>',
+    {top:'#FFF8DB', bottom:'#FDE68A', accent:'#FBBF24'}),
+  streetlights: makeVisualCard('Streetlights', 'Control outdoor lighting',
+    '<rect x="154" y="70" width="12" height="126" rx="6" fill="#64748B"/>' +
+    '<path d="M160 82 Q198 82 206 112" fill="none" stroke="#64748B" stroke-width="10" stroke-linecap="round"/>' +
+    '<path d="M204 112 Q184 112 176 128 L210 128 Z" fill="#E5E7EB" stroke="#64748B" stroke-width="4"/>' +
+    '<circle cx="106" cy="196" r="18" fill="#334155" opacity="0.85"/><circle cx="160" cy="210" r="15" fill="#475569" opacity="0.7"/><circle cx="214" cy="194" r="18" fill="#334155" opacity="0.85"/>' +
+    '<circle cx="194" cy="145" r="34" fill="#FDE68A" opacity="0.45"/>',
+    {top:'#E7F0FF', bottom:'#C9DDF8', accent:'#2563EB'}),
+  floodlights: makeVisualCard('Floodlights', 'Avoid leaving outdoor lights on',
+    '<rect x="150" y="90" width="20" height="84" rx="8" fill="#6B7280"/>' +
+    '<rect x="112" y="108" width="44" height="38" rx="8" fill="#CBD5E1" stroke="#64748B" stroke-width="5"/>' +
+    '<rect x="164" y="108" width="44" height="38" rx="8" fill="#CBD5E1" stroke="#64748B" stroke-width="5"/>' +
+    '<path d="M118 146 L150 172" stroke="#64748B" stroke-width="6"/><path d="M202 146 L170 172" stroke="#64748B" stroke-width="6"/>' +
+    '<circle cx="134" cy="128" r="26" fill="#FDE68A" opacity="0.5"/><circle cx="186" cy="128" r="26" fill="#FDE68A" opacity="0.5"/>',
+    {top:'#FFF8DC', bottom:'#FDE68A', accent:'#F59E0B'}),
+  meetingroom: makeVisualCard('Meeting Room', 'Switch lights off after use',
+    '<rect x="74" y="128" width="172" height="20" rx="10" fill="#A16207"/>' +
+    '<rect x="88" y="144" width="16" height="46" rx="6" fill="#8B5E34"/><rect x="216" y="144" width="16" height="46" rx="6" fill="#8B5E34"/>' +
+    '<rect x="104" y="90" width="112" height="28" rx="14" fill="#FDE68A" stroke="#F59E0B" stroke-width="5"/>' +
+    '<rect x="88" y="158" width="28" height="28" rx="6" fill="#CBD5E1"/><rect x="204" y="158" width="28" height="28" rx="6" fill="#CBD5E1"/>',
+    {top:'#FFF7E6', bottom:'#F7E6C9', accent:'#F59E0B'}),
+  standbytech: makeVisualCard('Standby Tech', 'Cut phantom power',
+    '<rect x="68" y="110" width="68" height="54" rx="10" fill="#111827"/><rect x="80" y="120" width="44" height="28" rx="4" fill="#3B82F6"/>' +
+    '<rect x="148" y="106" width="48" height="64" rx="8" fill="#E5E7EB" stroke="#94A3B8" stroke-width="5"/>' +
+    '<rect x="208" y="116" width="36" height="54" rx="8" fill="#CBD5E1" stroke="#94A3B8" stroke-width="5"/>' +
+    '<rect x="90" y="172" width="130" height="14" rx="7" fill="#64748B"/>' +
+    '<path d="M226 170 L226 214 C226 226 214 236 202 236" fill="none" stroke="#2563EB" stroke-width="10" stroke-linecap="round"/>',
+    {top:'#EEF4FB', bottom:'#E2E8F0', accent:'#2563EB'}),
+  ebikedock: makeVisualCard('E-Bike Dock', 'Avoid idle charging',
+    '<circle cx="112" cy="182" r="24" fill="#111827"/><circle cx="210" cy="182" r="24" fill="#111827"/>' +
+    '<circle cx="112" cy="182" r="10" fill="#E5E7EB"/><circle cx="210" cy="182" r="10" fill="#E5E7EB"/>' +
+    '<path d="M112 182 L146 126 L190 126 L210 182" fill="none" stroke="#10B981" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M146 126 L170 182" stroke="#10B981" stroke-width="8" stroke-linecap="round"/><rect x="192" y="98" width="34" height="52" rx="8" fill="#CBD5E1" stroke="#64748B" stroke-width="5"/><path d="M180 126 L192 126" stroke="#2563EB" stroke-width="8" stroke-linecap="round"/>',
+    {top:'#ECFDF5', bottom:'#D1FAE5', accent:'#10B981'}),
+  mower: makeVisualCard('Electric Mower', 'Charge only when needed',
+    '<rect x="104" y="142" width="86" height="34" rx="10" fill="#22C55E" stroke="#166534" stroke-width="5"/>' +
+    '<rect x="96" y="128" width="34" height="24" rx="6" fill="#16A34A"/>' +
+    '<path d="M188 146 L230 102" stroke="#475569" stroke-width="7" stroke-linecap="round"/><path d="M222 96 L246 78" stroke="#475569" stroke-width="6" stroke-linecap="round"/>' +
+    '<circle cx="118" cy="190" r="18" fill="#111827"/><circle cx="182" cy="190" r="18" fill="#111827"/><circle cx="118" cy="190" r="7" fill="#CBD5E1"/><circle cx="182" cy="190" r="7" fill="#CBD5E1"/>',
+    {top:'#F0FDF4', bottom:'#DCFCE7', accent:'#16A34A'}),
+  sprinklers: makeVisualCard('Sprinklers', 'Use timers and smart watering',
+    '<rect x="148" y="176" width="24" height="24" rx="4" fill="#64748B"/>' +
+    '<g stroke="#60A5FA" stroke-width="6" stroke-linecap="round"><path d="M160 170 Q132 140 102 140"/><path d="M160 168 Q160 130 160 110"/><path d="M160 170 Q188 140 218 140"/></g>' +
+    '<g fill="#60A5FA"><circle cx="104" cy="140" r="5"/><circle cx="132" cy="128" r="5"/><circle cx="160" cy="108" r="5"/><circle cx="188" cy="128" r="5"/><circle cx="216" cy="140" r="5"/></g>' +
+    '<rect x="86" y="204" width="148" height="16" rx="8" fill="#65A30D"/>',
+    {top:'#ECFEFF', bottom:'#CFFAFE', accent:'#60A5FA'}),
+  poolpump: makeVisualCard('Pool Pump', 'Run only when required',
+    '<circle cx="124" cy="152" r="34" fill="#93C5FD" opacity="0.9"/><path d="M124 120 C106 142 104 152 104 162 C104 174 114 184 124 184 C134 184 144 174 144 162 C144 152 142 142 124 120Z" fill="#3B82F6"/>' +
+    '<rect x="154" y="124" width="70" height="54" rx="12" fill="#CBD5E1" stroke="#64748B" stroke-width="5"/>' +
+    '<circle cx="154" cy="152" r="18" fill="#E5E7EB" stroke="#64748B" stroke-width="4"/><path d="M224 138 L246 138 L246 164 L224 164" fill="none" stroke="#64748B" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>',
+    {top:'#EAF6FF', bottom:'#D6ECFF', accent:'#3B82F6'}),
+  fountain: makeVisualCard('Fountain', 'Turn off decorative water when idle',
+    '<ellipse cx="160" cy="214" rx="84" ry="20" fill="#93C5FD" opacity="0.85"/>' +
+    '<path d="M120 206 Q136 172 160 172 Q184 172 200 206" fill="#CBD5E1" stroke="#64748B" stroke-width="5"/>' +
+    '<path d="M138 172 Q150 148 160 148 Q170 148 182 172" fill="#E5E7EB" stroke="#64748B" stroke-width="5"/>' +
+    '<g stroke="#60A5FA" stroke-width="6" stroke-linecap="round"><path d="M160 104 Q152 128 160 148"/><path d="M160 122 Q132 142 118 170"/><path d="M160 122 Q188 142 202 170"/></g>' +
+    '<circle cx="160" cy="102" r="5" fill="#60A5FA"/>',
+    {top:'#EEF8FF', bottom:'#DCEEFF', accent:'#60A5FA'}),
+  patioheater: makeVisualCard('Patio Heater', 'Switch heater off when not needed',
+    '<rect x="152" y="86" width="16" height="110" rx="8" fill="#6B7280"/>' +
+    '<path d="M122 100 L198 100 L186 126 L134 126 Z" fill="#374151" stroke="#111827" stroke-width="5"/>' +
+    '<rect x="136" y="126" width="48" height="42" rx="10" fill="#111827"/>' +
+    '<g stroke="#F97316" stroke-width="9" stroke-linecap="round"><path d="M136 174 C136 156 148 148 148 132"/><path d="M160 178 C160 152 172 144 172 126"/><path d="M184 174 C184 156 194 148 194 134"/></g>' +
+    '<rect x="132" y="196" width="56" height="12" rx="6" fill="#9CA3AF"/>',
+    {top:'#FFF1E6', bottom:'#FFD7B5', accent:'#F97316'}),
+  conveyor: makeVisualCard('Conveyor', 'Stop the belt when idle',
+    '<rect x="74" y="146" width="172" height="26" rx="13" fill="#6B7280"/>' +
+    '<circle cx="96" cy="178" r="16" fill="#374151"/><circle cx="224" cy="178" r="16" fill="#374151"/>' +
+    '<circle cx="96" cy="178" r="6" fill="#CBD5E1"/><circle cx="224" cy="178" r="6" fill="#CBD5E1"/>' +
+    '<g fill="#9CA3AF"><rect x="100" y="136" width="26" height="10" rx="2"/><rect x="136" y="136" width="26" height="10" rx="2"/><rect x="172" y="136" width="26" height="10" rx="2"/></g>' +
+    '<rect x="110" y="186" width="100" height="10" rx="5" fill="#94A3B8"/>',
+    {top:'#EEF2F7', bottom:'#D9E0E7', accent:'#6B7280'}),
+  compressor: makeVisualCard('Air Compressor', 'Fix leaks and shut down after use',
+    '<rect x="92" y="136" width="98" height="46" rx="14" fill="#3B82F6" stroke="#1D4ED8" stroke-width="5"/>' +
+    '<circle cx="108" cy="188" r="16" fill="#111827"/><circle cx="176" cy="188" r="16" fill="#111827"/><circle cx="108" cy="188" r="6" fill="#CBD5E1"/><circle cx="176" cy="188" r="6" fill="#CBD5E1"/>' +
+    '<rect x="194" y="120" width="34" height="62" rx="8" fill="#CBD5E1" stroke="#64748B" stroke-width="5"/>' +
+    '<path d="M190 152 L214 152" stroke="#64748B" stroke-width="8" stroke-linecap="round"/><path d="M228 138 C246 138 246 166 228 166" fill="none" stroke="#64748B" stroke-width="8" stroke-linecap="round"/>',
+    {top:'#EFF6FF', bottom:'#DBEAFE', accent:'#2563EB'}),
+  baydoors: makeVisualCard('Bay Doors', 'Keep loading doors closed',
+    '<rect x="82" y="78" width="156" height="140" rx="12" fill="#E5E7EB" stroke="#64748B" stroke-width="6"/>' +
+    '<line x1="160" y1="84" x2="160" y2="218" stroke="#64748B" stroke-width="5"/>' +
+    '<g stroke="#9CA3AF" stroke-width="4"><path d="M94 104 L226 104"/><path d="M94 128 L226 128"/><path d="M94 152 L226 152"/><path d="M94 176 L226 176"/></g>' +
+    '<rect x="116" y="112" width="20" height="58" rx="6" fill="#CBD5E1"/><rect x="184" y="112" width="20" height="58" rx="6" fill="#CBD5E1"/>' +
+    '<path d="M244 114 C262 114 262 184 244 184" fill="none" stroke="#94A3B8" stroke-width="10" stroke-linecap="round" stroke-dasharray="10 8"/>',
+    {top:'#F3F4F6', bottom:'#E5E7EB', accent:'#64748B'}),
+  trashbins: makeVisualCard('Trash Bins', 'Sort waste correctly',
+    '<rect x="88" y="116" width="48" height="86" rx="12" fill="#16A34A" stroke="#166534" stroke-width="5"/>' +
+    '<rect x="80" y="102" width="64" height="16" rx="8" fill="#15803D"/>' +
+    '<rect x="136" y="116" width="48" height="86" rx="12" fill="#2563EB" stroke="#1D4ED8" stroke-width="5"/>' +
+    '<rect x="128" y="102" width="64" height="16" rx="8" fill="#1D4ED8"/>' +
+    '<rect x="184" y="116" width="48" height="86" rx="12" fill="#F59E0B" stroke="#B45309" stroke-width="5"/>' +
+    '<rect x="176" y="102" width="64" height="16" rx="8" fill="#D97706"/>',
+    {top:'#ECFDF5', bottom:'#D1FAE5', accent:'#22C55E'}),
+  generic: makeVisualCard('Energy Device', 'Investigate the energy issue',
+    '<circle cx="160" cy="142" r="58" fill="#DBEAFE" stroke="#60A5FA" stroke-width="6"/>' +
+    '<path d="M160 98 L172 130 L206 130 L178 150 L188 184 L160 164 L132 184 L142 150 L114 130 L148 130 Z" fill="#2563EB"/>',
+    {top:'#F5F7FA', bottom:'#E2E8F0', accent:'#2563EB'})
+};
+
+var spotVisualMap = {
+  'AC Unit': 'ac',
+  'Office AC': 'officeac',
+  'Water Heater': 'waterheater',
+  'Fridge': 'fridge',
+  'Public Fridge': 'publicfridge',
+  'Bulbs': 'lighting',
+  'High Bay Lights': 'highbay',
+  'Streetlights': 'streetlights',
+  'Floodlights': 'floodlights',
+  'Meeting Room': 'meetingroom',
+  'Standby Tech': 'standbytech',
+  'Electric Mower': 'mower',
+  'E-Bike Dock': 'ebikedock',
+  'Sprinklers': 'sprinklers',
+  'Pool Pump': 'poolpump',
+  'Fountain': 'fountain',
+  'Patio Heater': 'patioheater',
+  'Conveyor': 'conveyor',
+  'Air Compressor': 'compressor',
+  'Bay Doors': 'baydoors',
+  'Printers': 'printer',
+  'PCs': 'pc',
+  'Vending Machine': 'vending',
+  'Elevator': 'elevator',
+  'Trash Bins': 'trashbins'
+};
+
+function getSpotVisualSrc(spot) {
+  var key = spotVisualMap[spot.label] || 'generic';
+  return spotVisualLibrary[key] || spotVisualLibrary.generic;
+}
+
+// Real photographs of the actual device, served via Wikimedia Commons'
+// Special:FilePath endpoint (a stable, CORS-enabled permanent redirect).
+// "?width=480" asks Commons for a resized thumbnail so we don't pull multi-MB originals.
+// Each value is a verified Commons file name. If a photo fails to load for any
+// reason (offline, host blocked, file moved) the <img> onerror handler swaps in
+// the built-in SVG illustration instead, so the panel is never broken.
+function commonsPhoto(fileName, width) {
+  width = width || 480;
+  return 'https://commons.wikimedia.org/wiki/Special:FilePath/' +
+         encodeURIComponent(fileName) + '?width=' + width;
+}
+
+var spotPhotoFiles = {
+  'AC Unit': 'Air conditioner indoor unit.jpg',
+  'Office AC': 'Air conditioner indoor unit.jpg',
+  'Water Heater': 'Electric water heater.jpg',
+  'Fridge': 'Inside domestic refrigerator.JPG',
+  'Public Fridge': 'Plant-Based Community Fridge.jpg',
+  'Bulbs': 'LED bulb.jpg',
+  'High Bay Lights': 'Interior of warehouse.jpg',
+  'Streetlights': 'Street light.jpg',
+  'Floodlights': 'Floodlight.jpg',
+  'Meeting Room': 'Conference room.jpg',
+  'Standby Tech': 'Power strip.jpg',
+  'Electric Mower': 'Electric lawn mower.jpg',
+  'E-Bike Dock': 'Electric bicycle charging station.jpg',
+  'Sprinklers': 'Lawn sprinkler.jpg',
+  'Pool Pump': 'Pool pump.jpg',
+  'Fountain': 'Water fountain.jpg',
+  'Patio Heater': 'Patio heater.jpg',
+  'Conveyor': 'Conveyor belt.jpg',
+  'Air Compressor': 'Air compressor.jpg',
+  'Bay Doors': 'Warehouse Loading Dock.JPG',
+  'Printers': 'Laser printer.jpg',
+  'PCs': 'Personal computer.jpg',
+  'Vending Machine': 'Vending machine Suntory.jpg',
+  'Elevator': 'Elevator interior.jpg',
+  'Trash Bins': 'Recycling bins.jpg'
+};
+
+function getSpotPhotoSrc(spot) {
+  var f = spotPhotoFiles[spot.label];
+  return f ? commonsPhoto(f) : '';
+}
+
+function roundedRectPath(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+function drawLawnTexture(x, y, w, h) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  for (var gx = x + 8; gx < x + w; gx += 16) {
+    for (var gy = y + 8; gy < y + h; gy += 16) {
+      ctx.beginPath();
+      ctx.moveTo(gx - 3, gy + 3);
+      ctx.quadraticCurveTo(gx, gy - 6, gx + 3, gy + 3);
+      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(gx, gy + 4);
+      ctx.quadraticCurveTo(gx + 3, gy - 5, gx + 6, gy + 4);
+      ctx.strokeStyle = 'rgba(32,80,28,0.10)';
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawPlantCluster(x, y, w, h) {
+  ctx.save();
+  ctx.translate(x, y);
+  for (var i = 0; i < 7; i++) {
+    var px = w * (0.14 + i * 0.12);
+    var py = h * (0.52 + (i % 2) * 0.08);
+    ctx.fillStyle = i % 2 ? '#4E9C55' : '#3E8547';
+    ctx.beginPath();
+    ctx.ellipse(px, py, w * 0.09, h * 0.24, -0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(px + w * 0.04, py - h * 0.02, w * 0.09, h * 0.24, 0.45, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawFlowerBed(x, y, w, h) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = '#78A95A';
+  ctx.fillRect(0, h * 0.68, w, h * 0.18);
+  for (var i = 0; i < 10; i++) {
+    var fx = w * (0.08 + i * 0.09);
+    var stemTop = h * (0.32 + (i % 3) * 0.08);
+    ctx.strokeStyle = '#4E8B43';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(fx, h * 0.78);
+    ctx.lineTo(fx, stemTop);
+    ctx.stroke();
+    var petalColors = ['#F5C542', '#F97316', '#EF4444', '#E879F9'];
+    var petal = petalColors[i % petalColors.length];
+    for (var p = 0; p < 6; p++) {
+      var ang = (Math.PI * 2 / 6) * p;
+      ctx.fillStyle = petal;
+      ctx.beginPath();
+      ctx.ellipse(fx + Math.cos(ang) * 5, stemTop + Math.sin(ang) * 5, 4, 7, ang, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#7C4A21';
+    ctx.beginPath();
+    ctx.arc(fx, stemTop, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawPottedPlant(x, y, w, h) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = '#C98A6A';
+  ctx.beginPath();
+  ctx.moveTo(w * 0.28, h * 0.78);
+  ctx.lineTo(w * 0.72, h * 0.78);
+  ctx.lineTo(w * 0.64, h * 0.95);
+  ctx.lineTo(w * 0.36, h * 0.95);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#8B5E47';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.strokeStyle = '#507D3B';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(w * 0.5, h * 0.8);
+  ctx.lineTo(w * 0.5, h * 0.34);
+  ctx.stroke();
+  var leaves = [
+    [0.42,0.52,-0.6],[0.60,0.48,0.55],[0.40,0.38,-0.6],[0.61,0.36,0.55],[0.50,0.28,0]
+  ];
+  leaves.forEach(function(leaf){
+    ctx.fillStyle = '#67A85A';
+    ctx.beginPath();
+    ctx.ellipse(w * leaf[0], h * leaf[1], w * 0.12, h * 0.08, leaf[2], 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+function drawTreeIllustration(x, y, w, h) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = '#7C5A3B';
+  ctx.fillRect(w * 0.42, h * 0.42, w * 0.16, h * 0.42);
+  var blobs = [
+    [0.32,0.34,0.22,'#4E8B43'],[0.50,0.24,0.26,'#5AA148'],[0.68,0.34,0.22,'#4E8B43'],
+    [0.42,0.16,0.20,'#70B75D'],[0.58,0.16,0.20,'#70B75D']
+  ];
+  blobs.forEach(function(b){
+    ctx.fillStyle = b[3];
+    ctx.beginPath();
+    ctx.arc(w * b[0], h * b[1], Math.min(w,h) * b[2], 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+
+function getRoomSurface(stageName, roomLabel) {
+  var key = stageName + '|' + roomLabel;
+  var map = {
+    'The House|Living room': 'woodWarm',
+    'The House|Kitchen': 'tileCream',
+    'The House|Bedroom': 'carpetLavender',
+    'The Garden|Patio': 'stonePatio',
+    'The Garden|Lawn': 'lawn',
+    'The Garden|Shed': 'shedWood',
+    'The Factory|Assembly Line': 'factoryConcrete',
+    'The Factory|Storage': 'warehouse',
+    'The Factory|Manager Office': 'officeVinyl',
+    'The Office|Cubicles': 'officeCarpet',
+    'The Office|Meeting Room': 'meetingWood',
+    'The Office|Break Room': 'breakTile',
+    'The Office|Hallway': 'hallTile',
+    'The City Park|Walkway': 'parkPavers',
+    'The City Park|Pond Area': 'pondWater',
+    'The City Park|Gazebo': 'deckWood'
+  };
+  return map[key] || null;
+}
+
+function drawWoodPlanks(x, y, w, h, tones) {
+  tones = tones || ['#D7B081','#CEA775','#DEB88A','#C99F6A'];
+  ctx.save();
+  ctx.translate(x, y);
+  var plankH = Math.max(12, Math.floor(h / 9));
+  for (var py = 0, row = 0; py < h + plankH; py += plankH, row++) {
+    var px = 0;
+    while (px < w) {
+      var segW = Math.max(26, Math.min(w - px, Math.floor(plankH * (1.5 + ((row + px / plankH) % 4)))));
+      ctx.fillStyle = tones[(row + Math.floor(px / plankH)) % tones.length];
+      ctx.fillRect(px, py, segW, plankH);
+      ctx.strokeStyle = 'rgba(95,60,32,0.20)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(px, py, segW, plankH);
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      ctx.fillRect(px, py, segW, 1);
+      px += segW;
+    }
+  }
+  ctx.restore();
+}
+
+function drawCheckerTiles(x, y, w, h, a, b, size, grout) {
+  ctx.save();
+  ctx.translate(x, y);
+  size = size || 22;
+  for (var ix = 0; ix < w; ix += size) {
+    for (var iy = 0; iy < h; iy += size) {
+      ctx.fillStyle = (((ix / size) + (iy / size)) % 2 === 0) ? a : b;
+      ctx.fillRect(ix, iy, size, size);
+      ctx.strokeStyle = grout || 'rgba(120,120,120,0.14)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(ix, iy, size, size);
+    }
+  }
+  ctx.restore();
+}
+
+function drawCarpetTexture(x, y, w, h, base, dot, stripe) {
+  ctx.save();
+  ctx.fillStyle = base;
+  ctx.fillRect(x, y, w, h);
+  for (var iy = y + 8; iy < y + h; iy += 18) {
+    ctx.fillStyle = stripe || 'rgba(255,255,255,0.04)';
+    ctx.fillRect(x, iy, w, 1);
+  }
+  ctx.fillStyle = dot || 'rgba(80,80,80,0.08)';
+  for (var gx = x + 10; gx < x + w; gx += 18) {
+    for (var gy = y + 10; gy < y + h; gy += 18) {
+      ctx.beginPath();
+      ctx.arc(gx, gy, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawStonePatio(x, y, w, h) {
+  ctx.save();
+  ctx.fillStyle = '#D9CDC1';
+  ctx.fillRect(x, y, w, h);
+  var size = 26;
+  for (var row = 0, py = y; py < y + h; py += size, row++) {
+    for (var px = x + (row % 2 ? size / 2 : 0); px < x + w; px += size) {
+      ctx.fillStyle = (row + Math.floor((px - x) / size)) % 2 ? '#CFC2B4' : '#E3D8CD';
+      ctx.fillRect(px, py, size - 2, size - 2);
+      ctx.strokeStyle = 'rgba(110,90,80,0.15)';
+      ctx.strokeRect(px, py, size - 2, size - 2);
+    }
+  }
+  ctx.restore();
+}
+
+function drawConcreteFloor(x, y, w, h, base, speck) {
+  ctx.save();
+  ctx.fillStyle = base;
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  for (var iy = y + 20; iy < y + h; iy += 36) {
+    ctx.beginPath(); ctx.moveTo(x, iy); ctx.lineTo(x + w, iy); ctx.stroke();
+  }
+  ctx.fillStyle = speck || 'rgba(255,255,255,0.08)';
+  for (var i = 0; i < (w * h) / 600; i++) {
+    var sx = x + ((i * 37) % Math.max(1, Math.floor(w)));
+    var sy = y + ((i * 53) % Math.max(1, Math.floor(h)));
+    ctx.fillRect(sx, sy, 2, 2);
+  }
+  ctx.restore();
+}
+
+function drawPondTexture(x, y, w, h) {
+  ctx.save();
+  var grad = ctx.createLinearGradient(x, y, x, y + h);
+  grad.addColorStop(0, '#9ED2EC');
+  grad.addColorStop(1, '#6DA9CF');
+  ctx.fillStyle = grad;
+  ctx.fillRect(x, y, w, h);
+  for (var iy = y + 14; iy < y + h; iy += 22) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+    ctx.lineWidth = 1.5;
+    for (var ix = x + 8; ix < x + w - 8; ix += 28) {
+      ctx.beginPath();
+      ctx.arc(ix, iy, 7, 0, Math.PI, false);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawPaverPath(x, y, w, h) {
+  ctx.save();
+  ctx.fillStyle = '#BAAB9E';
+  ctx.fillRect(x, y, w, h);
+  var bw = 30, bh = 16;
+  for (var row = 0, py = y; py < y + h; py += bh, row++) {
+    for (var px = x - (row % 2 ? bw / 2 : 0); px < x + w; px += bw) {
+      ctx.fillStyle = ((row + Math.floor((px - x) / bw)) % 2 === 0) ? '#C6B8AA' : '#AE9D8F';
+      ctx.fillRect(px, py, bw - 1, bh - 1);
+    }
+  }
+  ctx.restore();
+}
+
+
+function drawBlockFloor(x, y, w, h, base, alt, grout) {
+  var size = T;
+  ctx.save();
+  for (var ix = x; ix < x + w; ix += size) {
+    for (var iy = y; iy < y + h; iy += size) {
+      var cellW = Math.min(size, x + w - ix);
+      var cellH = Math.min(size, y + h - iy);
+      ctx.fillStyle = (((ix - x) / size + (iy - y) / size) % 2 === 0) ? base : (alt || base);
+      ctx.fillRect(ix, iy, cellW, cellH);
+      ctx.strokeStyle = grout || 'rgba(0,0,0,0.08)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(ix, iy, cellW, cellH);
+    }
+  }
+  ctx.restore();
+}
+
+function drawDottedBlockFloor(x, y, w, h, base, dot, grout) {
+  drawBlockFloor(x, y, w, h, base, base, grout);
+  ctx.save();
+  ctx.fillStyle = dot || 'rgba(90,90,90,0.10)';
+  for (var ix = x + T / 2; ix < x + w; ix += T) {
+    for (var iy = y + T / 2; iy < y + h; iy += T) {
+      ctx.beginPath();
+      ctx.arc(ix, iy, Math.max(1, T * 0.06), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawRoomTexture(stageName, roomLabel, x, y, w, h, fallbackColor) {
+  var surface = getRoomSurface(stageName, roomLabel);
+  if (!surface) {
+    ctx.fillStyle = fallbackColor;
+    ctx.fillRect(x, y, w, h);
+    return;
+  }
+  if (surface === 'woodWarm') return drawBlockFloor(x, y, w, h, '#D7B07C', '#D7B07C', 'rgba(120,90,55,0.14)');
+  if (surface === 'meetingWood') return drawBlockFloor(x, y, w, h, '#CFB186', '#CFB186', 'rgba(120,90,55,0.14)');
+  if (surface === 'deckWood') return drawBlockFloor(x, y, w, h, '#C6A67B', '#C6A67B', 'rgba(120,90,55,0.14)');
+  if (surface === 'tileCream') return drawBlockFloor(x, y, w, h, '#F6F1E8', '#EEE7DC', 'rgba(150,130,110,0.12)');
+  if (surface === 'breakTile') return drawBlockFloor(x, y, w, h, '#F4EEE5', '#E9DFD2', 'rgba(150,130,110,0.12)');
+  if (surface === 'hallTile') return drawBlockFloor(x, y, w, h, '#D7DDE0', '#D0D5D8', 'rgba(100,115,125,0.14)');
+  if (surface === 'stonePatio') return drawBlockFloor(x, y, w, h, '#D8CCC0', '#D1C4B7', 'rgba(110,90,80,0.15)');
+  if (surface === 'lawn') return drawBlockFloor(x, y, w, h, '#9CCF78', '#96C871', 'rgba(70,120,55,0.14)');
+  if (surface === 'shedWood') return drawBlockFloor(x, y, w, h, '#C2A083', '#C2A083', 'rgba(120,90,55,0.14)');
+  if (surface === 'factoryConcrete') return drawBlockFloor(x, y, w, h, '#B9BCC1', '#B3B7BC', 'rgba(90,95,105,0.14)');
+  if (surface === 'warehouse') return drawBlockFloor(x, y, w, h, '#A5A8AD', '#9EA2A7', 'rgba(60,60,70,0.18)');
+  if (surface === 'officeVinyl') return drawBlockFloor(x, y, w, h, '#D3D5DA', '#CBCFD5', 'rgba(100,110,130,0.12)');
+  if (surface === 'officeCarpet') return drawDottedBlockFloor(x, y, w, h, '#E5E9EC', 'rgba(90,100,110,0.10)', 'rgba(130,140,150,0.10)');
+  if (surface === 'carpetLavender') return drawDottedBlockFloor(x, y, w, h, '#E9E4F1', 'rgba(120,110,150,0.12)', 'rgba(150,140,180,0.10)');
+  if (surface === 'pondWater') return drawBlockFloor(x, y, w, h, '#8DC2E0', '#84BAD8', 'rgba(90,140,170,0.16)');
+  if (surface === 'parkPavers') return drawBlockFloor(x, y, w, h, '#BAAB9E', '#B2A496', 'rgba(100,85,75,0.16)');
+  ctx.fillStyle = fallbackColor;
+  ctx.fillRect(x, y, w, h);
+}
+
+function drawDecorVisual(d) {
+  var x = d.x * T, y = d.y * T, w = d.w * T, h = d.h * T;
+  if (d.e === '🌿') { drawPlantCluster(x, y, w, h); return true; }
+  if (d.e === '🌻') { drawFlowerBed(x, y, w, h); return true; }
+  if (d.e === '🪴') { drawPottedPlant(x, y, w, h); return true; }
+  return false;
+}
+
+function drawFurnitureIllustration(f) {
+  var x = f.x * T, y = f.y * T, w = f.w * T, h = f.h * T;
+  if (f.lbl === 'Tree') { drawTreeIllustration(x, y, w, h); return true; }
+  if (f.lbl === 'Flowers') { drawFlowerBed(x, y, w, h); return true; }
+  return false;
+}
+
+
+function getRoomByLabel(stage, label) {
+  for (var i = 0; i < stage.rooms.length; i++) {
+    if (stage.rooms[i].label === label) return stage.rooms[i];
+  }
+  return null;
+}
+
+function makeStageDoors(stageIdx) {
+  var map = {
+    0: [
+      {x:12, y:8, w:3, h:3, orientation:'vertical', doorType:'double', fromRoom:'Living room', toRoom:'Kitchen'},
+      {x:6, y:11, w:3, h:3, orientation:'horizontal', doorType:'single', hinge:'top', swing:1, fromRoom:'Living room', toRoom:'Bedroom'},
+      {x:18, y:11, w:3, h:3, orientation:'horizontal', doorType:'single', hinge:'top', swing:1, fromRoom:'Kitchen', toRoom:'Bedroom'}
+    ],
+    1: [
+      {x:10, y:7, w:3, h:3, orientation:'vertical', doorType:'double', fromRoom:'Patio', toRoom:'Lawn'},
+      {x:10, y:15, w:3, h:3, orientation:'vertical', doorType:'single', hinge:'left', swing:1, fromRoom:'Shed', toRoom:'Lawn'}
+    ],
+    2: [
+      {x:8, y:12, w:3, h:3, orientation:'horizontal', doorType:'double', fromRoom:'Assembly Line', toRoom:'Storage'},
+      {x:17, y:12, w:3, h:3, orientation:'horizontal', doorType:'double', fromRoom:'Assembly Line', toRoom:'Manager Office'}
+    ],
+    3: [
+      {x:15, y:7, w:3, h:3, orientation:'vertical', doorType:'single', hinge:'left', swing:1, fromRoom:'Cubicles', toRoom:'Meeting Room'},
+      {x:7, y:15, w:3, h:3, orientation:'horizontal', doorType:'double', fromRoom:'Cubicles', toRoom:'Hallway'},
+      {x:15, y:18, w:3, h:3, orientation:'vertical', doorType:'single', hinge:'left', swing:1, fromRoom:'Hallway', toRoom:'Break Room'}
+    ],
+    4: [
+      {x:7, y:8, w:3, h:3, orientation:'horizontal', doorType:'double', fromRoom:'Walkway', toRoom:'Pond Area'},
+      {x:15, y:13, w:3, h:3, orientation:'vertical', doorType:'single', hinge:'left', swing:1, fromRoom:'Pond Area', toRoom:'Gazebo'}
+    ]
+  };
+  return (map[stageIdx] || []).map(function(d) {
+    return {
+      x: d.x, y: d.y, w: d.w, h: d.h,
+      orientation: d.orientation,
+      doorType: d.doorType || 'single',
+      hinge: d.hinge || (d.orientation === 'vertical' ? 'left' : 'top'),
+      swing: d.swing || 1,
+      fromRoom: d.fromRoom, toRoom: d.toRoom,
+      open: 0
+    };
+  });
+}
+
+function getDoorTriggerInfo(d) {
+  var nearest = null;
+  var entities = [{x: player.x, y: player.y}];
+  currentPets.forEach(function(p){ entities.push({x:p.x, y:p.y}); });
+  if (kid.active) entities.push({x:kid.x, y:kid.y});
+  var cx = d.x + d.w / 2, cy = d.y + d.h / 2;
+  entities.forEach(function(e) {
+    var dx = e.x - cx, dy = e.y - cy;
+    var ok = d.orientation === 'vertical'
+      ? (Math.abs(dx) < 1.7 && Math.abs(dy) < 2.0)
+      : (Math.abs(dx) < 2.0 && Math.abs(dy) < 1.7);
+    if (!ok) return;
+    var dist = Math.hypot(dx, dy);
+    if (!nearest || dist < nearest.dist) nearest = {dist: dist, dx: dx, dy: dy};
+  });
+  return nearest;
+}
+
+function updateDoors() {
+  currentDoors.forEach(function(d) {
+    var info = getDoorTriggerInfo(d);
+    var target = info ? 1 : 0;
+    d.open += (target - d.open) * 0.28;
+    if (Math.abs(target - d.open) < 0.01) d.open = target;
+  });
+}
+
+function drawDoorThreshold(d) {
+  var stage = gameData[currentStageIdx];
+  var fromRoom = getRoomByLabel(stage, d.fromRoom);
+  var toRoom = getRoomByLabel(stage, d.toRoom);
+  var px = d.x * T, py = d.y * T, pw = d.w * T, ph = d.h * T;
+  var strip = Math.max(3, T * 0.10);
+
+  ctx.save();
+  ctx.fillStyle = '#E8E3DA';
+  ctx.fillRect(px, py, pw, ph);
+
+  if (d.orientation === 'vertical') {
+    if (fromRoom) drawRoomTexture(stage.name, d.fromRoom, px, py, strip, ph, fromRoom.rc);
+    if (toRoom) drawRoomTexture(stage.name, d.toRoom, px + pw - strip, py, strip, ph, toRoom.rc);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillRect(px + strip, py, 2, ph);
+    ctx.fillRect(px + pw - strip - 2, py, 2, ph);
+  } else {
+    if (fromRoom) drawRoomTexture(stage.name, d.fromRoom, px, py, pw, strip, fromRoom.rc);
+    if (toRoom) drawRoomTexture(stage.name, d.toRoom, px, py + ph - strip, pw, strip, toRoom.rc);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillRect(px, py + strip, pw, 2);
+    ctx.fillRect(px, py + ph - strip - 2, pw, 2);
+  }
+
+  ctx.strokeStyle = 'rgba(120,100,80,0.16)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(px, py, pw, ph);
+  ctx.restore();
+}
+
+function drawDoor(d) {
+  var px = d.x * T, py = d.y * T, pw = d.w * T, ph = d.h * T;
+  var open = d.open; // 0 = closed, 1 = open
+  var frame = '#7C5A3B';      // door frame
+  var panel = '#A9744F';      // door panel
+  var panelHi = '#C18B63';
+  var panelLo = '#8A5C3A';
+
+  ctx.save();
+
+  if (d.orientation === 'vertical') {
+    // Opening spans horizontally (gap is along X); door panels are vertical bars.
+    var gapY = py + ph * 0.10;
+    var gapH = ph * 0.80;
+    var jamb = Math.max(3, T * 0.16);
+    // top & bottom jambs
+    ctx.fillStyle = frame;
+    ctx.fillRect(px, py, pw, gapY - py);
+    ctx.fillRect(px, gapY + gapH, pw, (py + ph) - (gapY + gapH));
+
+    var thick = Math.max(4, T * 0.22);
+    if (d.doorType === 'double') {
+      // two panels sliding apart vertically into the jambs
+      var leafFull = gapH / 2;
+      var leaf = leafFull * (1 - open);
+      // top leaf
+      drawDoorPanel(px + pw/2 - thick/2, gapY, thick, leaf, panel, panelHi, panelLo, false);
+      // bottom leaf
+      drawDoorPanel(px + pw/2 - thick/2, gapY + gapH - leaf, thick, leaf, panel, panelHi, panelLo, false);
+    } else {
+      // single swinging panel hinged top or bottom, swings toward "open"
+      var hingeY = (d.hinge === 'bottom') ? gapY + gapH : gapY;
+      var dir = (d.hinge === 'bottom') ? -1 : 1;
+      var len = gapH;
+      var ang = (Math.PI/2) * 0.78 * open * dir; // up to ~70deg
+      ctx.save();
+      ctx.translate(px + pw/2, hingeY);
+      ctx.rotate(ang);
+      drawDoorPanel(-thick/2, 0, thick, len, panel, panelHi, panelLo, true);
+      ctx.restore();
+    }
+  } else {
+    // Horizontal opening (gap along Y); door panels are horizontal bars.
+    var gapX = px + pw * 0.10;
+    var gapW = pw * 0.80;
+    ctx.fillStyle = frame;
+    ctx.fillRect(px, py, gapX - px, ph);
+    ctx.fillRect(gapX + gapW, py, (px + pw) - (gapX + gapW), ph);
+
+    var thickH = Math.max(4, T * 0.22);
+    if (d.doorType === 'double') {
+      var leafFullH = gapW / 2;
+      var leafH = leafFullH * (1 - open);
+      drawDoorPanel(gapX, py + ph/2 - thickH/2, leafH, thickH, panel, panelHi, panelLo, false);
+      drawDoorPanel(gapX + gapW - leafH, py + ph/2 - thickH/2, leafH, thickH, panel, panelHi, panelLo, false);
+    } else {
+      var hingeX = (d.hinge === 'right') ? gapX + gapW : gapX;
+      var dirH = (d.hinge === 'right') ? -1 : 1;
+      var lenH = gapW;
+      var angH = (Math.PI/2) * 0.78 * open * dirH;
+      ctx.save();
+      ctx.translate(hingeX, py + ph/2);
+      ctx.rotate(angH);
+      drawDoorPanel(0, -thickH/2, lenH, thickH, panel, panelHi, panelLo, true);
+      ctx.restore();
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawDoorPanel(x, y, w, h, base, hi, lo, swinging) {
+  if (w <= 0.5 || h <= 0.5) return;
+  ctx.save();
+  // panel body
+  ctx.fillStyle = base;
+  roundedRectPath(ctx, x, y, w, h, Math.min(3, Math.min(w,h)/2));
+  ctx.fill();
+  // highlight edge + shadow edge
+  ctx.fillStyle = hi;
+  ctx.fillRect(x, y, Math.max(1, w*0.18), h);
+  ctx.fillStyle = lo;
+  ctx.fillRect(x + w - Math.max(1, w*0.18), y, Math.max(1, w*0.18), h);
+  // outline
+  ctx.strokeStyle = 'rgba(60,40,24,0.45)'; ctx.lineWidth = 1;
+  roundedRectPath(ctx, x, y, w, h, Math.min(3, Math.min(w,h)/2)); ctx.stroke();
+  // inset recessed panel detail (only if big enough)
+  if (Math.min(w,h) > T*0.5) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1;
+    if (w >= h) ctx.strokeRect(x + w*0.18, y + h*0.22, w*0.64, h*0.56);
+    else ctx.strokeRect(x + w*0.22, y + h*0.18, w*0.56, h*0.64);
+  }
+  // handle near the free end of a swinging leaf
+  if (swinging) {
+    ctx.fillStyle = '#F5D27A';
+    if (w >= h) { ctx.beginPath(); ctx.arc(x + w*0.86, y + h/2, Math.max(1.5, h*0.18), 0, Math.PI*2); ctx.fill(); }
+    else { ctx.beginPath(); ctx.arc(x + w/2, y + h*0.86, Math.max(1.5, w*0.18), 0, Math.PI*2); ctx.fill(); }
+  }
+  ctx.restore();
+}
+
+// ==========================================
+// GAME ENGINE
+// ==========================================
+
+function wk(x,y){return Math.floor(x)+'_'+Math.floor(y)}
+function addW(x,y){wallSet[wk(x,y)]=1}
+
+function buildWalls(stage) {
+  wallSet = {};
+  
+  for(var wx=0; wx<COLS; wx++){
+    for(var wy=0; wy<ROWS; wy++){
+      addW(wx, wy);
+    }
+  }
+  
+  stage.rooms.forEach(r => {
+    for(var i = r.x + 1; i < r.x + r.w - 1; i++){
+      for(var j = r.y + 1; j < r.y + r.h - 1; j++){
+        delete wallSet[wk(i,j)];
+      }
+    }
+  });
+  
+  if(currentStageIdx === 0) { 
+    [8,9,10].forEach(j => {delete wallSet[wk(12,j)];delete wallSet[wk(13,j)];delete wallSet[wk(14,j)]}); 
+    [6,7,8].forEach(i => {delete wallSet[wk(i,11)];delete wallSet[wk(i,12)];delete wallSet[wk(i,13)]}); 
+    [18,19,20].forEach(i => {delete wallSet[wk(i,11)];delete wallSet[wk(i,12)];delete wallSet[wk(i,13)]}); 
+  }
+  if(currentStageIdx === 1) { 
+    [7,8,9].forEach(j => {delete wallSet[wk(10,j)];delete wallSet[wk(11,j)];delete wallSet[wk(12,j)]}); 
+    [15,16,17].forEach(j => {delete wallSet[wk(10,j)];delete wallSet[wk(11,j)];delete wallSet[wk(12,j)]}); 
+  }
+  if(currentStageIdx === 2) { 
+    [8,9,10].forEach(i => {delete wallSet[wk(i,12)];delete wallSet[wk(i,13)];delete wallSet[wk(i,14)]}); 
+    [17,18,19].forEach(i => {delete wallSet[wk(i,12)];delete wallSet[wk(i,13)];delete wallSet[wk(i,14)]}); 
+  }
+  if(currentStageIdx === 3) { 
+    [7,8,9].forEach(j => {delete wallSet[wk(15,j)];delete wallSet[wk(16,j)];delete wallSet[wk(17,j)]}); 
+    [7,8,9].forEach(i => {delete wallSet[wk(i,15)];delete wallSet[wk(i,16)];delete wallSet[wk(i,17)]}); 
+    [18,19,20].forEach(j => {delete wallSet[wk(15,j)];delete wallSet[wk(16,j)];delete wallSet[wk(17,j)]}); 
+  }
+  if(currentStageIdx === 4) { 
+    [7,8,9].forEach(i => {delete wallSet[wk(i,8)];delete wallSet[wk(i,9)];delete wallSet[wk(i,10)]}); 
+    [13,14,15].forEach(j => {delete wallSet[wk(15,j)];delete wallSet[wk(16,j)];delete wallSet[wk(17,j)]}); 
+  }
+}
+
+function isSolid(fx, fy){
+  if(fx<0 || fy<0 || fx>=COLS || fy>=ROWS || wallSet[wk(fx,fy)]) return true;
+  var stage = gameData[currentStageIdx];
+  for(var i=0;i<stage.furniture.length;i++){
+    var f=stage.furniture[i];
+    if(fx>=f.x && fx<f.x+f.w && fy>=f.y && fy<f.y+f.h) return true;
+  }
+  for(var i=0;i<stage.spots.length;i++){
+    var s=stage.spots[i];
+    // Now ignores solved spots so you can walk through them!
+    if(!s.fixed && !s.broken && fx>=s.x && fx<s.x+s.w && fy>=s.y && fy<s.y+s.h) return true;
+  }
+  return false;
+}
+
+// A* PATHFINDING ALGORITHM FOR THE NEIGHBOR KID
+function isWalkableForKid(fx, fy) {
+  if(fx<0 || fy<0 || fx>=COLS || fy>=ROWS || wallSet[wk(fx,fy)]) return false;
+  var stage = gameData[currentStageIdx];
+  for(var i=0;i<stage.furniture.length;i++){
+    var f=stage.furniture[i];
+    if(fx>=f.x && fx<f.x+f.w && fy>=f.y && fy<f.y+f.h) return false;
+  }
+  return true; 
+}
+
+function getGridPath(startX, startY, endX, endY) {
+  var startNode = {x: Math.floor(startX), y: Math.floor(startY), g:0, h:0, f:0, parent:null};
+  var openList = [startNode];
+  var closedSet = {};
+  
+  var iters = 0;
+  while(openList.length > 0 && iters < 1000) {
+      iters++;
+      var lowInd = 0;
+      for(var i=0; i<openList.length; i++) {
+          if(openList[i].f < openList[lowInd].f) { lowInd = i; }
+      }
+      var curr = openList[lowInd];
+      
+      if(Math.hypot(curr.x + 0.5 - endX, curr.y + 0.5 - endY) <= 2.5) {
+          var path = [];
+          var temp = curr;
+          while(temp.parent) {
+              path.push({x: temp.x + 0.5, y: temp.y + 0.5});
+              temp = temp.parent;
+          }
+          return path.reverse();
+      }
+      
+      openList.splice(lowInd, 1);
+      closedSet[curr.x + "_" + curr.y] = true;
+      
+      var neighbors = [
+          {x: curr.x-1, y: curr.y}, {x: curr.x+1, y: curr.y},
+          {x: curr.x, y: curr.y-1}, {x: curr.x, y: curr.y+1}
+      ];
+      
+      for(var i=0; i<neighbors.length; i++) {
+          var nx = neighbors[i].x;
+          var ny = neighbors[i].y;
+          
+          if(!isWalkableForKid(nx + 0.5, ny + 0.5)) continue; 
+          if(closedSet[nx + "_" + ny]) continue;
+          
+          var gScore = curr.g + 1;
+          var inOpen = false;
+          for(var j=0; j<openList.length; j++){
+              if(openList[j].x === nx && openList[j].y === ny) {
+                  inOpen = true;
+                  if(gScore < openList[j].g) {
+                      openList[j].g = gScore;
+                      openList[j].f = openList[j].g + openList[j].h;
+                      openList[j].parent = curr;
+                  }
+                  break;
+              }
+          }
+          
+          if(!inOpen) {
+              var h = Math.abs(nx + 0.5 - endX) + Math.abs(ny + 0.5 - endY);
+              openList.push({x: nx, y: ny, g: gScore, h: h, f: gScore + h, parent: curr});
+          }
+      }
+  }
+  return []; 
+}
+
+function setTempMsg(msg, duration) {
+  tempMsg = msg;
+  tempMsgTimer = duration;
+}
+
+function performKidAction(targetSpot) {
+  var actionTaken = false;
+  
+  if (kid.type === 'evil') {
+    if (!targetSpot.fixed && !targetSpot.broken) {
+      if (Math.random() < 0.5) {
+        targetSpot.broken = true; targetSpot.fixed = true; targetSpot.attempts = 2; stageFixedCount++;
+        totalScore = Math.max(0, totalScore - 50);
+        setTempMsg("💥 The kid broke the " + targetSpot.label + "!", 300);
+      } else {
+        setTempMsg("🧒 The kid played with the " + targetSpot.label + " but it survived.", 240);
+      }
+      actionTaken = true;
+    }
+  } else {
+    if (targetSpot.broken) {
+      if (Math.random() < 0.5) {
+        targetSpot.broken = false; targetSpot.fixed = false; targetSpot.attempts = 0; stageFixedCount--;
+        setTempMsg("✨ The kid miraculously repaired the " + targetSpot.label + "!", 300);
+      } else {
+        setTempMsg("🧒 The kid tried to fix the " + targetSpot.label + " but failed.", 240);
+      }
+      actionTaken = true;
+    } else {
+      setTempMsg("🧒 The kid is admiring the " + targetSpot.label + ".", 240);
+      actionTaken = true;
+    }
+  }
+  
+  document.getElementById('hfound').textContent = stageFixedCount+'/5';
+  document.getElementById('hscore').textContent = totalScore+' pts';
+  
+  if(actionTaken) {
+    kid.interactionsLeft--;
+    if(kid.interactionsLeft <= 0) {
+      kid.state = 'leaving';
+    }
+    
+    if (stageFixedCount >= 5) {
+      gstate = 'challenge';
+      var html = '<div class="sheet-handle"></div><div class="sheet-title" style="color:#A32D2D">💥 Stage Ended by Kid!</div><div class="outcome-box outcome-bad">The mischievous kid broke your last device! You lost those points.</div>';
+      if(currentStageIdx === gameData.length - 1) {
+        html += '<button class="btn-continue" onclick="document.getElementById(\'challenge-overlay\').classList.remove(\'show\'); setTimeout(showAdoptions,400)">Finish Campaign! 🏆</button>';
+      } else {
+        html += '<button class="btn-continue" onclick="document.getElementById(\'challenge-overlay\').classList.remove(\'show\'); setTimeout(showStageClear,400)">Proceed to Next Map →</button>';
+      }
+      document.getElementById('challenge-sheet').innerHTML = html;
+      document.getElementById('challenge-overlay').classList.add('show');
+    }
+  }
+}
+
+function updatePhysics() {
+  if (gstate !== 'playing') return;
+  var kx = (keys.ArrowRight || keys.d) - (keys.ArrowLeft || keys.a);
+  var ky = (keys.ArrowDown || keys.s) - (keys.ArrowUp || keys.w);
+  var dx = joyX || kx; var dy = joyY || ky;
+  var mag = Math.hypot(dx, dy);
+  if(mag > 1) { dx /= mag; dy /= mag; }
+
+  if(mag > 0.1) {
+    player.moving = true; player.dirAngle = Math.atan2(dy, dx);
+    if (player.dirAngle > -Math.PI/4 && player.dirAngle <= Math.PI/4) player.faceDir = 2; 
+    else if (player.dirAngle > Math.PI/4 && player.dirAngle <= 3*Math.PI/4) player.faceDir = 1; 
+    else if (player.dirAngle > -3*Math.PI/4 && player.dirAngle <= -Math.PI/4) player.faceDir = 3; 
+    else player.faceDir = 0; 
+    var speed = 0.1; var moveX = dx * speed; var moveY = dy * speed; var r = player.radius;
+    if(!isSolid(player.x + moveX + Math.sign(moveX)*r, player.y - r) && !isSolid(player.x + moveX + Math.sign(moveX)*r, player.y + r)) player.x += moveX;
+    if(!isSolid(player.x - r, player.y + moveY + Math.sign(moveY)*r) && !isSolid(player.x + r, player.y + moveY + Math.sign(moveY)*r)) player.y += moveY;
+  } else { player.moving = false; }
+
+  currentPets.forEach(pet => {
+    if (!pet.tamed) {
+      // Gentle, slow wandering — animals just amble around the area.
+      // Occasional brief pauses make it look like grazing/loitering rather than racing.
+      if (pet.pause === undefined) pet.pause = 0;
+      if (pet.pause > 0) { pet.pause--; return; }
+      if (Math.random() < 0.004) { pet.pause = 60 + Math.floor(Math.random() * 90); return; }
+
+      var SLOW = 0.28; // global slow-down so movement reads as casual ambling
+      var currentVx = pet.baseVx * SLOW; var currentVy = pet.baseVy * SLOW;
+      pet.x += currentVx; if (isSolid(pet.x + Math.sign(currentVx)*pet.radius, pet.y)) pet.baseVx *= -1;
+      pet.y += currentVy; if (isSolid(pet.x, pet.y + Math.sign(currentVy)*pet.radius)) pet.baseVy *= -1;
+    }
+  });
+
+  // SMART A* PATHFINDING FOR KID
+  if (kid.active) {
+    if (kid.state === 'idle' || !kid.target) {
+      kid.path = null;
+      var possible = [];
+      if (kid.type === 'evil') {
+         possible = gameData[currentStageIdx].spots.filter(s => !s.fixed && !s.broken);
+      } else {
+         possible = gameData[currentStageIdx].spots.filter(s => s.broken);
+         if (possible.length === 0) possible = gameData[currentStageIdx].spots.filter(s => !s.fixed && !s.broken); 
+      }
+      
+      if (possible.length > 0) {
+        kid.target = possible[Math.floor(Math.random() * possible.length)]; kid.state = 'seeking';
+      } else {
+        kid.interactionsLeft = 0; kid.state = 'leaving';
+      }
+    }
+
+    if (kid.state === 'seeking' && kid.target) {
+      if ((kid.type === 'evil' && (kid.target.fixed || kid.target.broken)) || (kid.type === 'good' && !kid.target.broken && gameData[currentStageIdx].spots.filter(s=>s.broken).length > 0)) {
+          kid.state = 'idle'; 
+      } else {
+          var tx = kid.target.x + kid.target.w/2;
+          var ty = kid.target.y + kid.target.h/2;
+          
+          if (!kid.path) {
+              kid.path = getGridPath(kid.x, kid.y, tx, ty);
+              if (kid.path.length === 0) {
+                  kid.state = 'standby';
+                  kid.timer = 0;
+              }
+          }
+
+          if (kid.path && kid.path.length > 0) {
+              var nextNode = kid.path[0];
+              var dist = Math.hypot(nextNode.x - kid.x, nextNode.y - kid.y);
+              
+              if (dist < 0.2) {
+                  kid.path.shift();
+              } else {
+                  var kdx = (nextNode.x - kid.x) / dist * kid.speed;
+                  var kdy = (nextNode.y - kid.y) / dist * kid.speed;
+                  kid.x += kdx;
+                  kid.y += kdy;
+              }
+              
+              if (Math.hypot(tx - kid.x, ty - kid.y) <= 2.6) {
+                  kid.state = 'standby';
+                  kid.timer = 0;
+                  kid.path = null;
+              }
+          } else if (kid.path && kid.path.length === 0) {
+              if (Math.hypot(tx - kid.x, ty - kid.y) <= 3.5) {
+                  kid.state = 'standby';
+                  kid.timer = 0;
+                  kid.path = null;
+              } else {
+                  kid.state = 'idle';
+                  kid.target = null;
+              }
+          }
+      }
+    }
+
+    if (kid.state === 'standby') {
+       kid.timer++;
+       if (kid.timer >= 600) {
+          performKidAction(kid.target);
+          kid.target = null;
+          kid.state = 'idle';
+       }
+    }
+
+    if (kid.state === 'leaving') {
+       kid.active = false;
+       setTimeout(function(){ setTempMsg("🏃 The neighbor kid went home.", 300); }, 1000);
+    }
+  }
+
+  if (tempMsgTimer > 0) tempMsgTimer--;
+
+  updateDoors();
+  checkNear();
+}
+
+function checkNear(){
+  var nearSpot = null, nearFixedSpot = null, nearPet = null, nearKid = null, nearFurn = null, stage = gameData[currentStageIdx];
+  
+  if (kid.active && Math.hypot(player.x - kid.x, player.y - kid.y) <= 3.0) {
+    nearKid = kid;
+  }
+  
+  for(var i=0;i<stage.spots.length;i++){
+    var s = stage.spots[i];
+    var dist = Math.hypot(player.x - (s.x + s.w/2), player.y - (s.y + s.h/2));
+    if(dist <= 3.5){ 
+       if (!s.fixed && !s.broken) { nearSpot = s; break; }
+       else if (s.fixed && !s.broken) { nearFixedSpot = s; }
+    }
+  }
+  
+  for(var i=0;i<currentPets.length;i++){
+    var p = currentPets[i];
+    if(!p.tamed && Math.hypot(player.x - p.x, player.y - p.y) <= 3.0){ nearPet = p; break; }
+  }
+  
+  if(!nearSpot && !nearFixedSpot && !nearPet && !nearKid) {
+    for(var i=0;i<stage.furniture.length;i++){
+      var f = stage.furniture[i];
+      if(f.noCollide) continue;
+      if(Math.hypot(player.x - (f.x + f.w/2), player.y - (f.y + f.h/2)) <= 3.5){ nearFurn = f; break; }
+    }
+  }
+
+  var mb = document.getElementById('msgbar'), btnE = document.getElementById('btn-e');
+  
+  if (tempMsgTimer > 0) {
+    mb.textContent = tempMsg; mb.className = 'highlight'; btnE.classList.remove('active');
+  } else if (nearKid) {
+    var kn = (kid.model && kid.model.name) ? kid.model.name : 'A neighbor kid';
+    mb.textContent = '👋 ' + kn + ' the neighbor kid is here! Tap E to talk to them!'; mb.className = 'highlight'; btnE.classList.add('active');
+  } else if(nearSpot){
+    mb.textContent = '⚠ ' + nearSpot.label + ' — Tap E to investigate!'; mb.className = 'danger'; btnE.classList.add('active');
+  } else if (nearPet) {
+    mb.textContent = '🐾 ' + nearPet.emoji + ' ' + (nearPet.label || nearPet.emoji) + ' is hanging around — Tap E to interact!'; mb.className = 'highlight'; btnE.classList.add('active');
+  } else if (nearFixedSpot) {
+    mb.textContent = '✨ ' + nearFixedSpot.label + ' — Tap E to view details!'; mb.className = 'highlight'; btnE.classList.add('active');
+  } else if (nearFurn) {
+    mb.textContent = '🛋️ ' + nearFurn.lbl + ' — Tap E to interact!'; mb.className = ''; btnE.classList.add('active');
+  } else {
+    mb.textContent = 'Explore the area to find energy problems!'; mb.className = ''; btnE.classList.remove('active');
+  }
+}
+
+function drawSprite(px, py, moving){
+  var x = px * T, y = py * T, bob = moving ? Math.sin(tick * 0.4) * 2 : 0;
+  ctx.save(); ctx.translate(x, y + bob); ctx.scale(T/20, T/20);
+  if(player.faceDir === 0) ctx.scale(-1, 1);
+
+  // soft shadow
+  ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(0, 11, 8, 3, 0, 0, Math.PI*2); ctx.fill();
+
+  var legSw = moving ? Math.sin(tick * 0.4) * 4 : 0;
+  // legs (rounded)
+  ctx.fillStyle='#37475A';
+  roundedRectPath(ctx, -5 + legSw, 4, 4, 8, 1.5); ctx.fill();
+  roundedRectPath(ctx, 1 - legSw, 4, 4, 8, 1.5); ctx.fill();
+  // shoes
+  ctx.fillStyle='#23303d';
+  roundedRectPath(ctx, -5.5 + legSw, 11, 5, 2.5, 1); ctx.fill();
+  roundedRectPath(ctx, 0.5 - legSw, 11, 5, 2.5, 1); ctx.fill();
+
+  // torso with subtle shading
+  var grad = ctx.createLinearGradient(0, -2, 0, 6);
+  grad.addColorStop(0, '#2272C0'); grad.addColorStop(1, '#185FA5');
+  ctx.fillStyle = grad; roundedRectPath(ctx, -6, -2, 12, 8, 2.5); ctx.fill();
+  // arms
+  var sw = moving ? Math.sin(tick * 0.4) * 5 : 0;
+  ctx.fillStyle='#185FA5';
+  roundedRectPath(ctx, -9, -1, 3, 7 - sw, 1.5); ctx.fill();
+  roundedRectPath(ctx, 6, -1, 3, 7 + sw, 1.5); ctx.fill();
+  // hands
+  ctx.fillStyle='#F5C4B3';
+  ctx.beginPath(); ctx.arc(-7.5, 6 - sw, 1.6, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(7.5, 6 + sw, 1.6, 0, Math.PI*2); ctx.fill();
+
+  // head
+  ctx.fillStyle='#F5C4B3'; roundedRectPath(ctx, -5, -14, 10, 11, 4); ctx.fill();
+  // hair
+  ctx.fillStyle='#5a3000'; roundedRectPath(ctx, -6, -15, 12, 5, 3); ctx.fill();
+  ctx.fillRect(-6, -12, 2, 4); ctx.fillRect(4, -12, 2, 4);
+  // face details
+  if (player.faceDir !== 3) {
+    ctx.fillStyle='#222';
+    ctx.beginPath(); ctx.arc(1.5, -7.5, 1, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#c0604a'; ctx.lineWidth=0.8; ctx.beginPath(); ctx.moveTo(-1, -4); ctx.lineTo(3, -4); ctx.stroke();
+    // detective badge / lens
+    ctx.fillStyle='#EF9F27'; ctx.beginPath(); ctx.arc(8, 0, 2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.arc(7.4, -0.6, 0.7, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawKidSprite(px, py, moving, faceDir, model){
+  model = model || kidModels[0];
+  var x = px * T, y = py * T, bob = moving ? Math.sin(tick * 0.45) * 1.6 : 0;
+  ctx.save(); ctx.translate(x, y + bob);
+  // kids are a bit smaller than the player
+  ctx.scale(T/20 * 0.85, T/20 * 0.85);
+  if(faceDir === 0) ctx.scale(-1, 1);
+
+  ctx.fillStyle='rgba(0,0,0,0.16)'; ctx.beginPath(); ctx.ellipse(0, 11, 7, 2.6, 0, 0, Math.PI*2); ctx.fill();
+
+  var legSw = moving ? Math.sin(tick * 0.45) * 3.5 : 0;
+  ctx.fillStyle='#4a4a4a';
+  roundedRectPath(ctx, -4 + legSw, 4, 3.4, 7, 1.3); ctx.fill();
+  roundedRectPath(ctx, 0.6 - legSw, 4, 3.4, 7, 1.3); ctx.fill();
+  ctx.fillStyle='#2b2b2b';
+  roundedRectPath(ctx, -4.5 + legSw, 10, 4.2, 2.2, 1); ctx.fill();
+  roundedRectPath(ctx, 0.3 - legSw, 10, 4.2, 2.2, 1); ctx.fill();
+
+  // shirt (uses model colour)
+  ctx.fillStyle = model.shirt; roundedRectPath(ctx, -5, -1, 10, 7, 2.2); ctx.fill();
+  var sw = moving ? Math.sin(tick * 0.45) * 4 : 0;
+  ctx.fillStyle = model.shirt;
+  roundedRectPath(ctx, -7.5, 0, 2.6, 6 - sw, 1.3); ctx.fill();
+  roundedRectPath(ctx, 4.9, 0, 2.6, 6 + sw, 1.3); ctx.fill();
+  ctx.fillStyle = model.skin;
+  ctx.beginPath(); ctx.arc(-6.2, 5.6 - sw, 1.4, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(6.2, 5.6 + sw, 1.4, 0, Math.PI*2); ctx.fill();
+
+  // head
+  ctx.fillStyle = model.skin; roundedRectPath(ctx, -4.5, -12, 9, 10, 3.8); ctx.fill();
+  // hair
+  ctx.fillStyle = model.hair; roundedRectPath(ctx, -5.2, -13, 10.4, 4.6, 2.8); ctx.fill();
+  ctx.fillRect(-5.2, -10.5, 1.8, 3.5); ctx.fillRect(3.4, -10.5, 1.8, 3.5);
+  // face
+  ctx.fillStyle='#222';
+  ctx.beginPath(); ctx.arc(-1.2, -6.2, 0.85, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(2.2, -6.2, 0.85, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = (kid.type === 'evil') ? '#A32D2D' : '#c0604a';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  if (kid.type === 'evil') { ctx.moveTo(-1.5, -3); ctx.quadraticCurveTo(0.5, -4, 2.5, -3); }
+  else { ctx.moveTo(-1.5, -3.5); ctx.quadraticCurveTo(0.5, -2.5, 2.5, -3.5); }
+  ctx.stroke();
+  ctx.restore();
+
+  // floating name tag
+  ctx.save();
+  ctx.font = 'bold ' + Math.max(8, Math.floor(T*0.32)) + 'px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  var tag = model.name;
+  var tw = ctx.measureText(tag).width + 10;
+  var ty = y - T*0.85;
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  roundedRectPath(ctx, x - tw/2, ty - T*0.22, tw, T*0.44, T*0.18); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.fillText(tag, x, ty);
+  ctx.restore();
+}
+
+function drawGame(){
+  updatePhysics(); var stage = gameData[currentStageIdx];
+  ctx.clearRect(0,0,W,H); ctx.fillStyle = stage.bg; ctx.fillRect(0,0,W,H);
+
+  for(var wx=0;wx<COLS;wx++){
+    for(var wy=0;wy<ROWS;wy++){
+      if(wallSet[wk(wx,wy)]){
+        // brick-ish wall with top light and bottom shadow for depth
+        ctx.fillStyle='#4a4640'; ctx.fillRect(wx*T,wy*T,T,T);
+        ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(wx*T,wy*T,T,Math.max(2,T*0.12));
+        ctx.fillStyle='rgba(0,0,0,0.22)'; ctx.fillRect(wx*T,wy*T+T-Math.max(2,T*0.14),T,Math.max(2,T*0.14));
+        ctx.fillStyle='rgba(0,0,0,0.12)'; ctx.fillRect(wx*T+T-Math.max(2,T*0.12),wy*T,Math.max(2,T*0.12),T);
+      } else {
+        ctx.fillStyle='#E0DED8'; ctx.fillRect(wx*T,wy*T,T,T);
+      }
+    }
+  }
+
+  stage.rooms.forEach(r => {
+    var roomX = (r.x+1)*T, roomY = (r.y+1)*T, roomW = (r.w-2)*T, roomH = (r.h-2)*T;
+    drawRoomTexture(stage.name, r.label, roomX, roomY, roomW, roomH, r.rc);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(roomX, roomY, roomW, roomH);
+    ctx.clip();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillRect(roomX, roomY, roomW, 4);
+    ctx.fillStyle = 'rgba(0,0,0,0.04)';
+    ctx.fillRect(roomX, roomY + roomH - 4, roomW, 4);
+
+    var fSize = Math.min((r.w-2)*T / r.label.length * 1.6, (r.h-2)*T * 0.36);
+    ctx.font = 'bold ' + fSize + 'px sans-serif';
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(r.label.toUpperCase(), (r.x + 1 + (r.w-2)/2)*T, (r.y + 1 + (r.h-2)/2)*T);
+    ctx.restore();
+
+    ctx.fillStyle='rgba(0,0,0,0.42)'; ctx.font='bold 14px sans-serif'; ctx.textAlign='left'; ctx.textBaseline='top'; ctx.fillText(r.label,(r.x+1)*T+5,(r.y+1)*T+5);
+  });
+
+  currentDoors.forEach(drawDoorThreshold);
+
+  stage.decor.forEach(d => {
+    if (drawDecorVisual(d)) return;
+    ctx.font = Math.floor(Math.min(d.w, d.h) * T * 0.8) + 'px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(d.e, (d.x + d.w/2)*T, (d.y + d.h/2)*T);
+  });
+
+  stage.furniture.forEach(f => {
+    if(!f.noCollide) {
+      ctx.fillStyle = f.c; ctx.fillRect(f.x*T,f.y*T,f.w*T,f.h*T);
+    }
+    if (!drawFurnitureIllustration(f)) {
+      ctx.font = Math.floor(Math.min(f.w, f.h) * T * 0.6) + 'px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(f.e, (f.x + f.w/2)*T, (f.y + f.h/2)*T);
+    }
+    
+    if(!f.noCollide) {
+      ctx.fillStyle='rgba(0,0,0,0.8)'; ctx.font='bold 10px sans-serif'; ctx.fillText(f.lbl, (f.x+f.w/2)*T, (f.y+f.h/2)*T + (f.h*T*0.35));
+    }
+  });
+
+  // Animated doors (drawn above floor & furniture so swinging panels are visible)
+  currentDoors.forEach(drawDoor);
+
+
+  currentPets.forEach(pet => {
+    // body (may be horizontally flipped to face travel direction)
+    ctx.save(); ctx.translate(pet.x * T, pet.y * T); if (pet.baseVx > 0) ctx.scale(-1, 1);
+    ctx.font = Math.floor(T * 0.8) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(pet.emoji, 0, (!pet.tamed && tick % 36 < 18) ? -2 : 0); 
+    if(pet.tamed) {
+       ctx.font = Math.floor(T * 0.4) + 'px sans-serif';
+       ctx.fillText('❤️', 0, -T * 0.6);
+    }
+    ctx.restore();
+
+    // name tag (drawn un-flipped so text never mirrors)
+    if (pet.name) {
+      ctx.save();
+      ctx.font = 'bold ' + Math.max(8, Math.floor(T*0.3)) + 'px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      var tag = pet.name;
+      var tw = ctx.measureText(tag).width + 10;
+      var tx = pet.x * T, ty = pet.y * T - T*0.78;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      roundedRectPath(ctx, tx - tw/2, ty - T*0.2, tw, T*0.4, T*0.16); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillText(tag, tx, ty);
+      ctx.restore();
+    }
+  });
+
+  if(kid.active) {
+    var kidFace = 1;
+    if (kid.state === 'seeking' && kid.path && kid.path.length > 0) { if(kid.path[0].x < kid.x) kidFace = 0; }
+    else if (kid.target && kid.target.x < kid.x) kidFace = 0;
+    var kidMoving = (kid.state === 'seeking');
+    drawKidSprite(kid.x, kid.y, kidMoving, kidFace, kid.model);
+  }
+
+  stage.spots.forEach(s => {
+    var px=s.x*T, py=s.y*T, pw=s.w*T, ph=s.h*T;
+    
+    if(s.broken){
+      ctx.fillStyle='#333'; ctx.fillRect(px,py,pw,ph);
+      ctx.strokeStyle='#111'; ctx.lineWidth=2; ctx.strokeRect(px+1,py+1,pw-2,ph-2);
+      ctx.fillStyle='#fff'; ctx.font='bold '+(T)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('💥', px+pw/2, py+ph/2);
+      ctx.fillStyle='#aaa'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('BROKEN', px+pw/2, py+ph+2);
+      return;
+    }
+
+    if(s.fixed){
+      ctx.fillStyle='rgba(29, 158, 117, 0.15)'; 
+      ctx.fillRect(px,py,pw,ph);
+      ctx.strokeStyle='#1D9E75'; ctx.lineWidth=2; ctx.strokeRect(px+1,py+1,pw-2,ph-2);
+      ctx.fillStyle='#fff'; ctx.font=Math.round(T*0.9)+'px sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(s.e, px+pw/2, py+ph/2);
+      ctx.fillStyle='#1D9E75'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('SOLVED', px+pw/2, py+ph+2);
+      return;
+    }
+    
+    var pulse=0.5+0.5*Math.sin(tick*0.1);
+    var rad = ctx.createRadialGradient(px+pw/2, py+ph/2, T/2, px+pw/2, py+ph/2, T*2);
+    rad.addColorStop(0, `rgba(226,75,74,${0.3*pulse})`); rad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = rad; ctx.fillRect(px-T, py-T, pw+T*2, ph+T*2);
+    ctx.fillStyle=`rgba(220,60,60,${0.75+0.25*pulse})`; ctx.fillRect(px,py,pw,ph);
+    ctx.strokeStyle='#7a1a1a'; ctx.lineWidth=2; ctx.strokeRect(px+1,py+1,pw-2,ph-2);
+    ctx.fillStyle = '#fff'; ctx.font=Math.round(T*0.9)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(s.e, px+pw/2, py+ph/2);
+    ctx.fillStyle='#fff'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(s.label, px+pw/2, py+ph+2);
+  });
+
+  drawSprite(player.x, player.y, player.moving);
+
+  // subtle vignette for depth
+  var vig = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.35, W/2, H/2, Math.max(W,H)*0.72);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.22)');
+  ctx.fillStyle = vig; ctx.fillRect(0,0,W,H);
+
+  tick++; animFrame = requestAnimationFrame(drawGame);
+}
+
+function interact(){
+  if(gstate!=='playing') return;
+  var nearSpot=null, nearFixedSpot=null, nearPet=null, nearFurn=null, stage = gameData[currentStageIdx];
+  
+  if (kid.active && Math.hypot(player.x - kid.x, player.y - kid.y) <= 3.0) {
+    showKidDialogue(); return;
+  }
+
+  for(var i=0;i<stage.spots.length;i++){
+    var s=stage.spots[i]; 
+    var dist = Math.hypot(player.x - (s.x+s.w/2), player.y - (s.y+s.h/2));
+    if(dist <= 3.5){ 
+       if (!s.fixed && !s.broken) { nearSpot=s; break; }
+       else if (s.fixed && !s.broken) { nearFixedSpot=s; }
+    }
+  }
+  if(nearSpot) { showChallenge(nearSpot); return; }
+  
+  for(var i=0;i<currentPets.length;i++){
+    var p = currentPets[i];
+    if(!p.tamed && Math.hypot(player.x - p.x, player.y - p.y) <= 3.0){ nearPet = p; break; }
+  }
+  if(nearPet) { showPetDialogue(nearPet); return; }
+  
+  if(nearFixedSpot) { showFixedDialogue(nearFixedSpot); return; }
+
+  for(var i=0;i<stage.furniture.length;i++){
+    var f = stage.furniture[i];
+    if(f.noCollide) continue;
+    if(Math.hypot(player.x - (f.x + f.w/2), player.y - (f.y + f.h/2)) <= 3.5){ nearFurn = f; break; }
+  }
+  if(nearFurn) { showFurnitureDialogue(nearFurn); return; }
+}
+
+function showFixedDialogue(s) {
+  gstate = 'challenge';
+  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info" style="background:#E1F5EE; color:#0F6E56;">✨ Solved</span>';
+  html += '<div class="sheet-title">' + s.label + '</div>';
+  html += '<div class="dialogue-box"><div class="dialogue-avatar" style="color:var(--darkgreen);">✓</div><div class="dialogue-text">This device is running at maximum efficiency! You successfully saved <b>RM ' + (s.savings || 0) + '</b> per month here!</div></div>';
+  html += '<button class="btn-continue" onclick="cont()">Continue Exploring</button>';
+  document.getElementById('challenge-sheet').innerHTML = html;
+  document.getElementById('challenge-overlay').classList.add('show');
+}
+
+function showFurnitureDialogue(f) {
+  gstate = 'challenge';
+  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">🛋️ Furniture</span>';
+  html += '<div class="sheet-title">' + f.lbl + '</div>';
+  html += '<div class="dialogue-box"><div class="dialogue-avatar">' + f.e + '</div><div class="dialogue-text">This ' + f.lbl + ' looks perfectly fine. There are no energy problems here.</div></div>';
+  
+  html += '<button class="cbtn" onclick="useFurniture(\'' + f.lbl + '\', \'' + f.e + '\')"><span class="choice-letter">A</span><span>Interact with it</span></button>';
+  html += '<button class="cbtn" onclick="cont()"><span class="choice-letter">B</span><span>Leave it alone</span></button>';
+
+  document.getElementById('challenge-sheet').innerHTML = html;
+  document.getElementById('challenge-overlay').classList.add('show');
+}
+
+window.useFurniture = function(lbl, emoji) {
+  var actionText = furnMsgs[lbl] || ("You take a moment to look at the " + lbl + ".");
+  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">✨ Interact</span>';
+  html += '<div class="sheet-title">' + lbl + '</div>';
+  html += '<div class="dialogue-box"><div class="dialogue-avatar">' + emoji + '</div><div class="dialogue-text">"' + actionText + '"</div></div>';
+  html += '<button class="btn-continue" onclick="cont()">Continue Exploring</button>';
+  document.getElementById('challenge-sheet').innerHTML = html;
+}
+
+function showKidDialogue() {
+  gstate = 'challenge';
+  var isEvil = (kid.type === 'evil');
+  var nm = (kid.model && kid.model.name) ? kid.model.name : 'The neighbor kid';
+  var av = (kid.model && kid.model.emoji) ? kid.model.emoji : '🧒';
+  var kidMsg = isEvil ? "Ugh, fine! I was just looking for something to break anyway. I'm leaving!" : "Oh, hi! Your place is super cool. I was just making sure everything was working! I'll head home now.";
+  
+  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">💬 Conversation</span>';
+  html += '<div class="sheet-title">' + nm + ' (Neighbor Kid)</div>';
+  html += '<div class="dialogue-box"><div class="dialogue-avatar">' + av + '</div><div class="dialogue-text">"' + kidMsg + '"</div></div>';
+  html += '<button class="btn-continue" onclick="kickKidOut()">Tell them to go home</button>';
+  
+  document.getElementById('challenge-sheet').innerHTML = html;
+  document.getElementById('challenge-overlay').classList.add('show');
+}
+
+function kickKidOut() {
+  kid.active = false;
+  cont();
+  setTempMsg("👋 You told the neighbor kid to go home.", 300);
+}
+
+function showPetDialogue(pet) {
+  gstate = 'challenge';
+  activePet = pet;
+  var nm = pet.name || 'an animal';
+  var sub = pet.species ? (pet.species + ' · ' + pet.model) : '';
+  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">🐾 Animal Encounter</span><div class="sheet-title">' + pet.emoji + ' ' + nm + (sub ? ' <span style="font-size:12px;color:var(--muted);font-weight:500;">(' + sub + ')</span>' : '') + '</div>';
+  html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">*' + nm + ' the ' + (pet.species || 'animal').toLowerCase() + ' is just hanging around, watching you curiously...*</div></div>';
+  html += '<button class="btn-continue" onclick="resolvePetInteract()">Gently pet ' + nm + '</button>';
+  html += '<button class="btn-retry" onclick="cont()">Leave ' + nm + ' alone</button>';
+  document.getElementById('challenge-sheet').innerHTML = html;
+  document.getElementById('challenge-overlay').classList.add('show');
+}
+
+function resolvePetInteract() {
+  var pet = activePet;
+  pet.tamed = true;
+  var isCat = (pet.emoji === '🐈'); 
+  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">🐾 Animal Interaction</span><div class="sheet-title">You interact with the ' + pet.emoji + '</div>';
+  var outcomeMsg = ""; var brokenSpots = gameData[currentStageIdx].spots.filter(s => s.broken); var unbrokenSpots = gameData[currentStageIdx].spots.filter(s => !s.fixed && !s.broken);
+
+  if (isCat) {
+    if (Math.random() < 0.5) { 
+      html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">You reach out to pet the Cat, but it is fierce and feisty! It hisses and goes on a rampage! 😾</div></div>';
+      if (Math.random() < 0.5 && unbrokenSpots.length > 0) {
+        var target = unbrokenSpots[Math.floor(Math.random() * unbrokenSpots.length)];
+        target.broken = true; target.fixed = true; target.attempts = 2; stageFixedCount++; totalScore = Math.max(0, totalScore - 50);
+        outcomeMsg = '<div class="outcome-box outcome-bad">💥 Oh no! The angry cat knocked over the <b>' + target.label + '</b> and broke it! You lost 50 pts.</div>';
+      } else {
+        outcomeMsg = '<div class="outcome-box outcome-info">The cat storms off, but luckily it didn\'t break anything this time!</div>';
+      }
+    } else { 
+      html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">You gently scratch the Cat behind the ears. It purrs loudly and rubs against your leg! 😻</div></div>';
+      if (Math.random() < 0.5 && brokenSpots.length > 0) {
+        var target = brokenSpots[Math.floor(Math.random() * brokenSpots.length)];
+        target.broken = false; target.fixed = false; target.attempts = 0; stageFixedCount--; 
+        outcomeMsg = '<div class="outcome-box outcome-good">✨ Miracle! The cat\'s playful energy somehow recovered the broken <b>' + target.label + '</b>! You can try fixing it again!</div>';
+      } else {
+        outcomeMsg = '<div class="outcome-box outcome-info">You gained a new feline friend! It is happily purring.</div>';
+      }
+    }
+  } else { 
+    html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">You find the animal adorable and decide to give it a gentle pat. What a cute and loving companion! 🥰</div></div>';
+    if (Math.random() < 0.5 && brokenSpots.length > 0) {
+        var target = brokenSpots[Math.floor(Math.random() * brokenSpots.length)];
+        target.broken = false; target.fixed = false; target.attempts = 0; stageFixedCount--; 
+        outcomeMsg = '<div class="outcome-box outcome-good">✨ Miracle! The cheerful energy of the ' + pet.emoji + ' miraculously recovered the broken <b>' + target.label + '</b>! You can try fixing it again!</div>';
+    } else {
+        outcomeMsg = '<div class="outcome-box outcome-info">The ' + pet.emoji + ' happily accepts your pets and wiggles in joy!</div>';
+    }
+  }
+
+  html += outcomeMsg;
+  
+  if (stageFixedCount === 5) {
+    if(currentStageIdx === gameData.length - 1) {
+      html+=`<button class="btn-continue" style="margin-top:14px;" onclick="document.getElementById('challenge-overlay').classList.remove('show'); setTimeout(showAdoptions,400)">Finish Campaign! 🏆</button>`;
+    } else {
+      html+=`<button class="btn-continue" style="margin-top:14px;" onclick="document.getElementById('challenge-overlay').classList.remove('show'); setTimeout(showStageClear,400)">Proceed to Next Map →</button>`;
+    }
+  } else {
+    html += '<button class="btn-continue" style="margin-top:14px;" onclick="cont()">Continue Exploring</button>';
+  }
+
+  document.getElementById('hfound').textContent = stageFixedCount+'/5';
+  document.getElementById('hscore').textContent = totalScore+' pts';
+  document.getElementById('challenge-sheet').innerHTML = html;
+  document.getElementById('challenge-overlay').classList.add('show');
+}
+
+function showChallenge(s){
+  gstate='challenge'; activeSpot=s;
+  currentChallengeChoices = s.choices.map((c, i) => ({ text: c, isCorrect: i === s.goodIdx }));
+  for (let i = currentChallengeChoices.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [currentChallengeChoices[i], currentChallengeChoices[j]] = [currentChallengeChoices[j], currentChallengeChoices[i]]; }
+  var letters=['A','B','C'];
+  var attemptsLeft = 2 - (s.attempts || 0);
+  var wastePct = s.danger ? Math.floor(Math.random() * 20 + 80) : Math.floor(Math.random() * 30 + 40);
+  var effPct = 100 - wastePct;
+
+  var html=`<div class="sheet-handle"></div>`;
+  html+=`<div class="sheet-title" style="margin-bottom: 4px;">${s.label}</div>`;
+  html+=`<div class="sheet-desc" style="margin-bottom: 12px; font-size: 14px;">${s.situation}</div>`;
+
+  html+=`<div class="interaction-layout">`;
+
+  html+=`<div class="int-left">`;
+  html+=`<div class="stat-row"><div class="stat-label"><span>Status</span> <span class="stat-val ${s.danger ? 'r' : 'b'}">${s.danger ? 'WARNING' : 'SUB-OPTIMAL'}</span></div></div>`;
+  html+=`<div class="stat-row"><div class="stat-label"><span>Power Drain</span> <span class="stat-val">${wastePct}%</span></div><div class="stat-bar"><div class="stat-fill" style="width:${wastePct}%; background:var(--red);"></div></div></div>`;
+  html+=`<div class="stat-row"><div class="stat-label"><span>Efficiency</span> <span class="stat-val">${effPct}%</span></div><div class="stat-bar"><div class="stat-fill" style="width:${effPct}%; background:var(--blue);"></div></div></div>`;
+  html+=`<div class="stat-row"><div class="stat-label"><span>Est. Saving</span> <span class="stat-val g">RM ${s.savings || 0}</span></div></div>`;
+  html+=`<div class="stat-row"><div class="stat-label"><span>Integrity</span> <span class="stat-val">${attemptsLeft} / 2</span></div></div>`;
+  html+=`</div>`;
+
+  var photoSrc = getSpotPhotoSrc(s);
+  var svgSrc = getSpotVisualSrc(s);
+  var imgSrc = photoSrc || svgSrc;
+  // data-fallback holds the built-in drawing; onerror swaps to it if the photo can't load.
+  html+=`<div class="int-mid"><img src="${imgSrc}" alt="${s.label}" data-fallback="${svgSrc}" onerror="if(this.dataset.fallback&&this.src!==this.dataset.fallback){this.onerror=null;this.src=this.dataset.fallback;this.classList.add('is-illustration');}"></div>`;
+
+  html+=`<div class="int-right">`;
+  currentChallengeChoices.forEach((cObj, i) => {
+    html+=`<button class="cbtn" onclick="resolve(${i})"><span class="choice-letter">${letters[i]}</span><span>${cObj.text}</span></button>`;
+  });
+  html+=`</div></div>`;
+
+  document.getElementById('challenge-sheet').innerHTML=html; 
+  document.getElementById('challenge-overlay').classList.add('show');
+}
+
+function resolve(idx){
+  var s = activeSpot, good = currentChallengeChoices[idx].isCorrect, html = '<div class="sheet-handle"></div>';
+  if(good){
+    s.fixed = true; stageFixedCount++; totalSavings+=s.savings; totalScore+=s.pts;
+    document.getElementById('hfound').textContent = stageFixedCount+'/5';
+    document.getElementById('hsave').textContent = 'RM '+totalSavings;
+    document.getElementById('hscore').textContent = totalScore+' pts';
+    html+=`<div class="sheet-title" style="color:#0F6E56">✓ Correct!</div><div class="outcome-box outcome-good">${s.gout}</div><div class="fact-box">📚 ${s.fact}</div><span style="display:inline-block; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:700; background:#E1F5EE; color:var(--darkgreen);">+RM ${s.savings}/mo saved &nbsp;·&nbsp; +${s.pts} pts</span><br>`;
+    
+    if(stageFixedCount === 5){
+      if(currentStageIdx === gameData.length - 1) {
+        html+=`<button class="btn" style="margin-top:14px;" onclick="document.getElementById('challenge-overlay').classList.remove('show'); setTimeout(showAdoptions,400)">Finish Campaign! 🏆</button>`;
+      } else {
+        html+=`<button class="btn" style="margin-top:14px;" onclick="document.getElementById('challenge-overlay').classList.remove('show'); setTimeout(showStageClear,400)">Proceed to Next Map →</button>`;
+      }
+    } else {
+      html+=`<button class="btn" style="margin-top:14px;" onclick="cont()">Continue Exploring</button>`;
+    }
+  } else {
+    s.attempts = (s.attempts || 0) + 1;
+    
+    if (s.attempts >= 2) {
+      s.broken = true;
+      s.fixed = true; 
+      stageFixedCount++;
+      totalScore = Math.max(0, totalScore - 50);
+      document.getElementById('hfound').textContent = stageFixedCount+'/5';
+      document.getElementById('hscore').textContent = totalScore+' pts';
+      
+      var petLostMsg = "";
+      if (currentPets.length > 0) {
+        if (Math.random() < 0.8) {
+          var lostPet = currentPets.pop(); 
+          lostPetEmojis.push(lostPet.emoji); 
+          petLostMsg = "<br><br><b>Oh no!</b> The loud <i>BANG</i> terrified the <b>" + lostPet.emoji + "</b> and it ran away in a panic!";
+        } else {
+          var bravePet = currentPets[currentPets.length - 1];
+          petLostMsg = "<br><br><b>BANG!</b> The loud noise was terrifying, but the <b>" + bravePet.emoji + "</b> barely flinched! It seems completely unbothered (or maybe just hard of hearing) and decides to stay!";
+        }
+      }
+
+      html+=`<div class="sheet-title" style="color:#A32D2D">💥 Device Broken!</div><div class="outcome-box outcome-bad">You chose wrong twice! The device is now permanently broken. You lost 50 points and missed out on the energy savings. ${petLostMsg}</div>`;
+      
+      if(stageFixedCount === 5){
+        if(currentStageIdx === gameData.length - 1) {
+          html+=`<button class="btn" style="margin-top:14px;" onclick="document.getElementById('challenge-overlay').classList.remove('show'); setTimeout(showAdoptions,400)">Finish Campaign! 🏆</button>`;
+        } else {
+          html+=`<button class="btn" style="margin-top:14px;" onclick="document.getElementById('challenge-overlay').classList.remove('show'); setTimeout(showStageClear,400)">Proceed to Next Map →</button>`;
+        }
+      } else {
+        html+=`<button class="btn" style="margin-top:14px;" onclick="cont()">Continue Exploring</button>`;
+      }
+
+    } else {
+      totalScore = Math.max(0, totalScore - 20); 
+      document.getElementById('hscore').textContent = totalScore+' pts';
+      html+=`<div class="sheet-title" style="color:#A32D2D">✗ Not right!</div><div class="outcome-box outcome-bad">${s.bout}</div><div class="fact-box">📚 Hint: ${s.fact}</div><div style="margin-bottom:12px; font-size:13px; font-weight:bold; color:var(--darkred);">⚠ 1 attempt remaining! Lose 20 pts.</div><button class="btn-retry" onclick="retry()">Try Again</button>`;
+    }
+  }
+  document.getElementById('challenge-sheet').innerHTML=html;
+}
+
+function retry(){ showChallenge(activeSpot); }
+function cont(){ gstate='playing'; activeSpot=null; activePet=null; document.getElementById('challenge-overlay').classList.remove('show'); keys = {w:0, a:0, s:0, d:0, ArrowUp:0, ArrowDown:0, ArrowLeft:0, ArrowRight:0}; }
+
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function resizeCanvas(){ var wrap=document.getElementById('canvas-wrap'); W=wrap.clientWidth; H=wrap.clientHeight; cv.width=W; cv.height=H; T=Math.floor(Math.min(W/COLS, H/ROWS)); }
+window.addEventListener('resize', () => { if(document.getElementById('gamescreen').classList.contains('active')) resizeCanvas(); });
+
+function initStage() {
+  stageFixedCount = 0; 
+  player.x = gameData[currentStageIdx].startX; 
+  player.y = gameData[currentStageIdx].startY;
+  
+  kid.active = stagesWithKid.includes(currentStageIdx);
+  if(kid.active) {
+    kid.x = gameData[currentStageIdx].startX + 1; 
+    kid.y = gameData[currentStageIdx].startY + 1;
+    kid.type = Math.random() < 0.5 ? 'evil' : 'good';
+    // Pick a neighbor kid model, avoiding an immediate repeat of the last one
+    var pool = kidModels.slice();
+    if(kid.model) pool = pool.filter(function(m){ return m.name !== kid.model.name; });
+    kid.model = pool[Math.floor(Math.random() * pool.length)];
+    kid.emoji = kid.model.emoji; 
+    kid.interactionsLeft = 2;
+    kid.state = 'idle';
+    kid.target = null;
+    kid.timer = 0;
+    kid.path = null;
+  }
+
+  currentPets = gameData[currentStageIdx].pets.map(p => {
+    var info = makeAnimalLabel(p.emoji);
+    return { x: p.x, y: p.y, radius: p.radius, baseVx: p.baseVx, baseVy: p.baseVy, emoji: p.emoji, tamed: false, pause: 0,
+             name: info.name, species: info.species, model: info.model, label: info.label };
+  });
+  currentDoors = makeStageDoors(currentStageIdx);
+  gameData[currentStageIdx].spots.forEach(s => { s.fixed = false; s.broken = false; s.attempts = 0; });
+
+  document.getElementById('hstage').textContent = (currentStageIdx + 1) + '/5';
+  document.getElementById('hfound').textContent = '0/5';
+  buildWalls(gameData[currentStageIdx]);
+  resizeCanvas(); 
+  gstate='playing';
+}
+
+function startGame() { 
+  currentStageIdx = 0; totalScore = 0; totalSavings = 0; lostPetEmojis = [];
+  
+  stagesWithKid = [0]; 
+  while(stagesWithKid.length < 3) {
+    var r = Math.floor(Math.random() * 5);
+    if(!stagesWithKid.includes(r)) stagesWithKid.push(r);
+  }
+
+  showScreen('gamescreen'); 
+  initStage();              
+  if(animFrame) cancelAnimationFrame(animFrame); 
+  drawGame(); 
+}
+
+function loadNextStage() { 
+  currentStageIdx++; 
+  showScreen('gamescreen'); 
+  initStage();              
+}
+
+function showStageClear() { 
+  gstate='paused';
+  var nextStage = gameData[currentStageIdx + 1];
+  document.getElementById('stage-icon').textContent = nextStage.icon;
+  document.getElementById('stage-title').textContent = nextStage.name + ' Unlocked!';
+  document.getElementById('stage-sub').textContent = "Excellent! Now let's find the energy waste in the next area.";
+  showScreen('stagescreen'); 
+}
+
+function showAdoptions() {
+  gstate = 'paused';
+  var listHtml = '';
+  gameData.forEach(stage => {
+    stage.pets.forEach(pet => {
+      var isLost = lostPetEmojis.includes(pet.emoji);
+      var displayEmoji = isLost ? '🪦' : pet.emoji;
+      var statusText = isLost ? 'Ran Away' : 'Adopted';
+      var cardClass = isLost ? 'pet-card lost' : 'pet-card';
+      listHtml += `<div class="${cardClass}"><div class="pet-emoji">${displayEmoji}</div><div class="pet-status">${statusText}</div></div>`;
+    });
+  });
+  document.getElementById('adoption-list').innerHTML = listHtml;
+  showScreen('adoptionscreen');
+}
+
+function showWin() { 
+  gstate='paused'; document.getElementById('ws-save').textContent = 'RM '+totalSavings+'/month'; document.getElementById('ws-score').textContent = totalScore+' pts'; showScreen('winscreen'); 
+}
+
+// JOYSTICK & KEYS
+var joyZone = document.getElementById('joy-zone'), joyStick = document.getElementById('joy-stick'), jActive = false;
+function handleJoy(cx, cy) {
+  var rect = joyZone.getBoundingClientRect(), bx = rect.left + rect.width/2, by = rect.top + rect.height/2;
+  var dx = cx - bx, dy = cy - by, dist = Math.hypot(dx, dy), maxR = (rect.width/2) - 10;
+  if (dist > maxR) { dx = (dx/dist) * maxR; dy = (dy/dist) * maxR; }
+  joyStick.style.transform = `translate(${dx}px, ${dy}px)`; joyX = dx / maxR; joyY = dy / maxR;
+}
+joyZone.addEventListener('touchstart', e => { jActive=true; handleJoy(e.touches[0].clientX, e.touches[0].clientY); }); document.addEventListener('touchmove', e => { if(jActive) handleJoy(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false}); document.addEventListener('touchend', () => { jActive=false; joyX=0; joyY=0; joyStick.style.transform = 'translate(0,0)'; });
+joyZone.addEventListener('mousedown', e => { jActive=true; handleJoy(e.clientX, e.clientY); }); document.addEventListener('mousemove', e => { if(jActive) handleJoy(e.clientX, e.clientY); }); document.addEventListener('mouseup', () => { jActive=false; joyX=0; joyY=0; joyStick.style.transform = 'translate(0,0)'; });
+document.addEventListener('keydown', e => { if(keys[e.key] !== undefined) keys[e.key] = 1; if(e.key.toLowerCase() === 'e') interact(); }); document.addEventListener('keyup', e => { if(keys[e.key] !== undefined) keys[e.key] = 0; });
+</script>
+</body>
+</html>

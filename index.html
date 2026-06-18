@@ -105,6 +105,14 @@
   .pet-emoji { font-size: 42px; margin-bottom: 4px; }
   .pet-status { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--darkgreen); }
   .pet-card.lost .pet-status { color: #666; }
+  .review-list { max-height: 42vh; overflow-y: auto; text-align: left; padding-right: 4px; margin-bottom: 18px; -webkit-overflow-scrolling: touch; }
+  .review-item { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+  .review-stage { font-size: 11px; font-weight: 800; color: var(--blue); text-transform: uppercase; margin-bottom: 5px; }
+  .review-question { font-size: 13px; line-height: 1.5; color: var(--text); font-weight: 700; margin-bottom: 8px; }
+  .review-answer { font-size: 12px; line-height: 1.45; color: var(--muted); margin-top: 4px; }
+  .review-answer strong { color: var(--text); }
+  .review-answer.good strong { color: var(--darkgreen); }
+  .review-answer.bad strong { color: var(--darkred); }
 
   @media (max-width: 650px) {
     .interaction-layout { flex-direction: column; }
@@ -115,7 +123,7 @@
 <body>
 
 <div id="intro" class="screen active">
-  <div class="card">
+  <div class="card" style="max-width: 720px;">
     <div class="icon">🌍</div>
     <div class="title">Energy Detective: Campaign</div>
     <div class="sub">Progress through 5 unique stages uncovering hidden energy waste to save money and the planet!</div>
@@ -123,6 +131,7 @@
       <div class="how-title">How to play</div>
       <div class="how-item">🕹️ Use Joystick or WASD to move</div>
       <div class="how-item">🔎 Find 5 energy problems per stage</div>
+      <div class="how-item">🧮 Each stage has only 1 simple calculation question</div>
       <div class="how-item">👆 Tap [E] near spots, furniture, or characters to interact</div>
       <div class="how-item">🧒 <b>Watch out for the Neighbor Kids!</b> Different kids show up each area — some are good (fix things) and some are sneaky (break things). Kick them out by pressing [E] near them.</div>
     </div>
@@ -174,6 +183,9 @@
       <div class="how-item">Total Savings: <strong style="color:var(--darkgreen); font-size:18px;" id="ws-save"></strong></div>
       <div class="how-item">Final Score: <strong style="color:var(--blue); font-size:18px;" id="ws-score"></strong></div>
     </div>
+    <div class="title" style="font-size:18px; margin-top:4px;">Answer Review</div>
+    <div class="sub" style="margin-bottom:10px;">Check each question, your answer, and the correct answer.</div>
+    <div class="review-list" id="answer-review"></div>
     <button class="btn" onclick="location.reload()">Play Again</button>
   </div>
 </div>
@@ -288,11 +300,13 @@ var tempMsg = "", tempMsgTimer = 0;
 // Stage Progress
 var stageFixedCount = 0;
 var currentChallengeChoices = []; 
+var answerHistory = [];
 var currentPets = []; 
 var currentDoors = []; 
 
 // Physics State
 var player = { x: 5, y: 5, radius: 0.35, moving: false, dirAngle: 0, faceDir: 1 };
+var furnitureActivity = null;
 var keys = { w:0, a:0, s:0, d:0, ArrowUp:0, ArrowDown:0, ArrowLeft:0, ArrowRight:0 };
 var joyX = 0, joyY = 0;
 
@@ -306,37 +320,43 @@ var wallSet = {};
 var gameData = [
   // STAGE 1: THE HOUSE
   {
-    name: "The House", icon: "🏠", bg: "#2C2C2A", startX: 6, startY: 6,
+    name: "The House", icon: "🏠", bg: "#2C2C2A", startX: 7, startY: 8,
     rooms: [
       {label:'Living room', x:1, y:1, w:12, h:11, rc:'#F8F6F0', pt:'lines'},
       {label:'Kitchen', x:14, y:1, w:10, h:11, rc:'#FDF6EE', pt:'check'},
       {label:'Bedroom', x:1, y:13, w:23, h:11, rc:'#F5F0FA', pt:'dots'}
     ],
     furniture: [
-      {x:2,y:2,w:3,h:2,c:'#C0DD97', e:'🛋️', lbl:'Sofa'},
-      {x:9,y:2,w:3,h:2,c:'#B5D4F4', e:'📺', lbl:'TV'},
-      {x:16,y:2,w:3,h:3,c:'#D3D1C7', e:'🍳', lbl:'Stove'}, 
-      {x:2,y:15,w:4,h:4,c:'#CECBF6', e:'🛏️', lbl:'Bed'}
+      {x:2,y:5,w:5,h:2,c:'#C66459', e:'🛋️', lbl:'Sofa'},
+      {x:3,y:9,w:3,h:2,c:'#1F2937', e:'📺', lbl:'TV'},
+      {x:2,y:2,w:3,h:2,c:'#3A3330', e:'🔥', lbl:'Fireplace'},
+      {x:9,y:2,w:2,h:4,c:'#6E4A2E', e:'📚', lbl:'Bookshelf'},
+      {x:16,y:2,w:3,h:3,c:'#9CA3AF', e:'🍳', lbl:'Stove'},
+      {x:16,y:7,w:4,h:3,c:'#8B5A38', e:'🍽️', lbl:'Table'},
+      {x:2,y:16,w:4,h:3,c:'#C25B52', e:'🛏️', lbl:'Bed'},
+      {x:11,y:16,w:5,h:3,c:'#7C2D3A', e:'🟥', lbl:'Rug', noCollide:true},
+      {x:21,y:18,w:2,h:4,c:'#6E4A2E', e:'📚', lbl:'Bookshelf'}
     ],
     decor: [
-      {x:1,y:6,w:3,h:3,e:'🟧'}, 
+      {x:14,y:14,w:2,h:2,e:'🪴'},
       {x:22,y:14,w:2,h:2,e:'🪴'}
     ],
     pets: [
-      { x: 5, y: 5, radius: 0.4, baseVx: 0.05, baseVy: 0.03, emoji: '🐈' },
+      { x: 10, y: 10, radius: 0.4, baseVx: 0.05, baseVy: 0.03, emoji: '🐈' },
       { x: 18, y: 18, radius: 0.4, baseVx: -0.06, baseVy: 0.05, emoji: '🐕' }
     ],
     spots: [
-      {x:3, y:3, w:2, h:2, label:'AC Unit', danger:true, e:'❄',
-       situation:'AC is set to 16°C and running empty.', choices:['Set to 25°C with timer','Turn to 14°C','Leave it alone'], goodIdx:0, gout:'25°C is ideal!', bout:'Colder is not faster.', fact:'Each degree below 25°C adds 6% energy use.', savings:25, pts:100},
-      {x:20, y:5, w:2, h:2, label:'Water Heater', danger:true, e:'🚿', 
-       situation:'Storage heater is ON 24/7.', choices:['Switch off until needed','Keep on for standby','Max thermostat'], goodIdx:0, gout:'On-demand saves money.', bout:'Standby uses massive power.', fact:'Heaters are 25% of the bill.', savings:30, pts:100},
-      {x:20, y:2, w:2, h:2, label:'Fridge', danger:true, e:'🧊',
-       situation:'Broken seal leaking cold air.', choices:['Replace seal','Set to max cold','Add ice bags'], goodIdx:0, gout:'New seal stops 30% extra compressor work.', bout:'Max cold wastes more power.', fact:'Check seals with a piece of paper.', savings:15, pts:100},
-      {x:10, y:18, w:2, h:2, label:'Bulbs', danger:true, e:'💡',
-       situation:'Old 60W incandescent bulbs.', choices:['Replace with LED','Replace with Halogen','Leave them'], goodIdx:0, gout:'LEDs use 85% less energy.', bout:'Halogen is inefficient.', fact:'LEDs last 25x longer.', savings:12, pts:100},
-      {x:5, y:18, w:2, h:2, label:'Standby Tech', danger:true, e:'🔌',
-       situation:'6 devices left on standby overnight.', choices:['Use switched power strip','Unplug only TV','Leave them'], goodIdx:0, gout:'Kills vampire power!', bout:'All devices drain power.', fact:'Standby is 10-15% of your bill.', savings:18, pts:100}
+      {x:10, y:7, w:2, h:2, label:'AC Unit', danger:true, e:'❄', chapter:'Energy Consumption & Cost',
+       calc:{given:[['Power rating','1 kW'],['Usage','2 h/day'],['Formula','kWh = kW × h']], ask:'Daily energy used by the AC?'},
+       situation:'A 1 kW air-con unit runs 2 hours a day. How much energy does it use in one day?', choices:['2 kWh/day','1 kWh/day','20 kWh/day'], goodIdx:0, gout:'1 kW × 2 h = 2 kWh/day.', bout:'Just multiply the power by the hours: 1 × 2.', fact:'kWh = power (kW) × hours. AC is one of the biggest loads in a home.', savings:25, pts:100},
+      {x:20, y:3, w:2, h:2, label:'Refrigerator', danger:true, e:'🧊', chapter:'Energy Consumption & Cost',
+       situation:'The fridge door seal is loose and cold air leaks out. What is the best fix?', choices:['Repair the seal so the door closes tightly','Keep opening the door to check it','Turn the fridge colder'], goodIdx:0, gout:'A tight door seal keeps cold air inside, so the fridge works less.', bout:'A colder setting or extra door opening makes the fridge work harder.', fact:'A fridge runs 24/7, so small waste adds up over a month.', savings:15, pts:100},
+      {x:3, y:9, w:3, h:2, label:'Television', danger:false, e:'📺', chapter:'Energy Consumption & Cost',
+       situation:'A 150 W TV is left on standby all night instead of being switched off. What is the smartest habit?', choices:['Switch it off fully at the wall','Leave it on standby for convenience','Turn the brightness down only'], goodIdx:0, gout:'Switching off at the wall removes standby (vampire) load completely.', bout:'Standby and dimming still draw power; only full off stops the drain.', fact:'Standby loads can be 10–15% of a home electricity bill.', savings:18, pts:100},
+      {x:6, y:16, w:2, h:2, label:'LED Lamps', danger:true, e:'💡', chapter:'Energy Consumption & Cost',
+       situation:'You need the same brightness with less electricity. Which lamp should you choose?', choices:['LED lamp','Old incandescent bulb','Halogen bulb'], goodIdx:0, gout:'LED lamps give the same light using much less electricity.', bout:'Incandescent and halogen bulbs waste more energy as heat.', fact:'LEDs use about 85% less energy and last far longer.', savings:12, pts:100},
+      {x:6, y:20, w:2, h:2, label:'Phone Chargers', danger:false, e:'🔌', chapter:'Energy Consumption & Cost',
+       situation:'Six chargers and adapters are left plugged in overnight with nothing charging. Best fix?', choices:['Use one switched power strip and turn it off','Unplug only the phone charger','Leave them — they use nothing'], goodIdx:0, gout:'A switched strip cuts all standby loads at once.', bout:'Adapters still sip power when idle; a single switch handles them all.', fact:'Always-plugged adapters are a classic source of vampire power.', savings:8, pts:100}
     ]
   },
   // STAGE 2: THE GARDEN
@@ -349,34 +369,35 @@ var gameData = [
     ],
     furniture: [
       {x:2,y:2,w:3,h:3,c:'#a09080', e:'🪑', lbl:'Table'},
-      {x:17,y:4,w:4,h:4,c:'#609040', e:'🌲', lbl:'Tree'}, 
-      {x:16,y:16,w:6,h:4,c:'#609040', e:'🌻', lbl:'Flowers'},
-      {x:2,y:14,w:4,h:3,c:'#807060', e:'🧰', lbl:'Tools'}
+      {x:17,y:3,w:5,h:4,c:'#6BB4D6', e:'🏊', lbl:'Pool'},
+      {x:21,y:10,w:3,h:4,c:'#609040', e:'🌲', lbl:'Tree'}, 
+      {x:15,y:17,w:6,h:4,c:'#609040', e:'🌻', lbl:'Flowers'},
+      {x:2,y:19,w:4,h:3,c:'#807060', e:'🧰', lbl:'Tools'}
     ],
     decor: [
-      {x:2,y:7,w:2,h:2,e:'🌿'}, 
-      {x:16,y:16,w:6,h:4,e:'🌻'}
+      {x:2,y:7,w:2,h:2,e:'🌿'}
     ],
     pets: [
-      { x: 15, y: 10, radius: 0.4, baseVx: 0.02, baseVy: 0.01, emoji: '🐢' },
-      { x: 18, y: 18, radius: 0.4, baseVx: -0.06, baseVy: 0.06, emoji: '🦋' }
+      { x: 13, y: 8, radius: 0.4, baseVx: 0.02, baseVy: 0.01, emoji: '🐢' },
+      { x: 22, y: 18, radius: 0.4, baseVx: -0.06, baseVy: 0.06, emoji: '🦋' }
     ],
     spots: [
-      {x:5, y:4, w:2, h:2, label:'Floodlights', danger:true, e:'🔦',
-       situation:'Halogen floodlights ON all day.', choices:['Install LED motion sensors','Paint bulbs darker','Leave them ON for safety'], goodIdx:0, gout:'Motion sensors give security with less power.', bout:'Halogen wastes massive energy.', fact:'Outdoor LEDs save up to 90% energy.', savings:20, pts:100},
-      {x:14, y:10, w:2, h:2, label:'Sprinklers', danger:true, e:'⛲',
-       situation:'Sprinklers running at high noon.', choices:['Timer for early morning','Water more at noon','Run 24/7'], goodIdx:0, gout:'Morning watering prevents evaporation waste.', bout:'Noon watering evaporates instantly.', fact:'Pumping water takes massive electricity.', savings:10, pts:100},
-      {x:4, y:16, w:2, h:2, label:'Electric Mower', danger:true, e:'🔌',
-       situation:'Mower left plugged in 24/7.', choices:['Unplug when charged','Leave plugged in','Charge slightly daily'], goodIdx:0, gout:'Prevents battery degradation and vampire draw.', bout:'Constant trickle charge wastes energy.', fact:'Unplug chargers once 100%.', savings:5, pts:100},
-      {x:18, y:5, w:2, h:2, label:'Pool Pump', danger:true, e:'⚙️',
-       situation:'Old pool pump running 24 hrs.', choices:['Use a timer for 6hrs/day','Keep running to stay clean','Add more chlorine'], goodIdx:0, gout:'Timers drastically cut heavy motor energy.', bout:'Pumps don\'t need 24/7 operation.', fact:'Pool pumps are massive energy hogs.', savings:40, pts:100},
-      {x:8, y:6, w:2, h:2, label:'Patio Heater', danger:true, e:'🔥',
-       situation:'Electric patio heater left ON empty.', choices:['Switch off immediately','Turn down to 50%','Leave on for later'], goodIdx:0, gout:'Never heat empty outdoor spaces.', bout:'Outdoor heating is highly inefficient.', fact:'Heating air outdoors dissipates instantly.', savings:25, pts:100}
+      {x:5, y:4, w:2, h:2, label:'Floodlights', danger:true, e:'🔦', chapter:'Energy Efficiency & Conservation',
+       calc:{given:[['Old lamp','60 W'],['New LED','10 W'],['Formula','saved = old − new']], ask:'Power SAVED by switching to LED?'},
+       situation:'A 60 W garden light is replaced with a 10 W LED. How much power is saved?', choices:['50 W','10 W','70 W'], goodIdx:0, gout:'60 W − 10 W = 50 W saved.', bout:'Saving = old power − new power: 60 − 10.', fact:'Energy efficiency means getting the same light for far less power.', savings:20, pts:100},
+      {x:14, y:10, w:2, h:2, label:'Sprinklers', danger:false, e:'⛲', chapter:'Energy Efficiency & Conservation',
+       situation:'The water pump and sprinklers run at noon, when most water evaporates. Most efficient fix?', choices:['Set a timer for early morning','Water more often at noon','Run the pump 24/7'], goodIdx:0, gout:'Watering at cool times means less waste, so the pump runs less.', bout:'Noon watering evaporates fast, wasting both water and pump energy.', fact:'Conservation = avoiding waste; efficiency = doing the same job with less.', savings:10, pts:100},
+      {x:5, y:16, w:2, h:2, label:'Electric Mower', danger:false, e:'🔌', chapter:'Energy Efficiency & Conservation',
+       situation:'The cordless mower is left on its charger 24/7 even when full. Best practice?', choices:['Unplug once fully charged','Keep it trickle-charging always','Charge a little every hour'], goodIdx:0, gout:'Unplugging when full avoids standby draw and protects the battery.', bout:'Constant trickle charging wastes energy and degrades the battery.', fact:'Switching off idle equipment is the simplest conservation habit.', savings:5, pts:100},
+      {x:22, y:5, w:2, h:2, label:'Pool Pump', danger:true, e:'⚙️', chapter:'Energy Efficiency & Conservation',
+       situation:'The pool pump is running all day even when the water is clean. What helps most?', choices:['Use a timer so it runs only when needed','Leave it running all day','Block the water pipe'], goodIdx:0, gout:'A timer prevents unnecessary pump running while still keeping the water clean.', bout:'Running all day wastes energy, and blocking the pipe is unsafe.', fact:'Big motors like pumps rarely need to run all day — a timer saves a lot.', savings:40, pts:100},
+      {x:8, y:6, w:2, h:2, label:'Patio Heater', danger:false, e:'🔥', chapter:'Energy Efficiency & Conservation',
+       situation:'An electric patio heater is left on heating an empty garden. The efficient move?', choices:['Switch it off when nobody is there','Turn it down to 50%','Leave it on for later'], goodIdx:0, gout:'Never heat an empty outdoor space — that energy is pure waste.', bout:'Even at 50% you are heating open air for no benefit.', fact:'Outdoor heaters lose heat instantly; using them only when needed is key.', savings:25, pts:100}
     ]
   },
   // STAGE 3: THE FACTORY
   {
-    name: "The Factory", icon: "🏭", bg: "#2a2a35", startX: 12, startY: 9,
+    name: "The Factory", icon: "🏭", bg: "#2a2a35", startX: 12, startY: 11,
     rooms: [
       {label:'Assembly Line', x:1, y:1, w:23, h:12, rc:'#B0B0B5', pt:'lines'},
       {label:'Storage', x:1, y:14, w:11, h:10, rc:'#A0A0A5', pt:'check'},
@@ -385,7 +406,8 @@ var gameData = [
     furniture: [
       {x:2,y:3,w:8,h:3,c:'#707075', e:'⚙️', lbl:'Machine A'},
       {x:14,y:3,w:8,h:3,c:'#707075', e:'⚙️', lbl:'Machine B'},
-      {x:2,y:18,w:5,h:5,c:'#808080', e:'📦', lbl:'Crates'}, 
+      {x:2,y:15,w:3,h:3,c:'#808080', e:'📦', lbl:'Crates'},
+      {x:7,y:18,w:4,h:3,c:'#8A7A66', e:'📦', lbl:'Pallets'},
       {x:14,y:18,w:4,h:3,c:'#D0D0D5', e:'🖥️', lbl:'Desk'} 
     ],
     decor: [
@@ -396,16 +418,17 @@ var gameData = [
       { x: 5, y: 18, radius: 0.4, baseVx: -0.07, baseVy: 0.04, emoji: '🐁' }
     ],
     spots: [
-      {x:11, y:4, w:2, h:2, label:'Conveyor', danger:true, e:'🛤️',
-       situation:'Belt running with no products.', choices:['Install auto-shutoff sensors','Leave it running to avoid restarts','Grease it more'], goodIdx:0, gout:'Sensors stop massive idle motor waste.', bout:'Idle motors burn immense electricity.', fact:'Motor systems use 60% of industrial power.', savings:150, pts:100},
-      {x:6, y:7, w:2, h:2, label:'Air Compressor', danger:true, e:'💨',
-       situation:'Loud hissing from an air hose leak.', choices:['Patch the leak immediately','Turn up compressor pressure','Ignore it'], goodIdx:0, gout:'Fixed leaks save huge compressor energy.', bout:'Higher pressure wastes more energy.', fact:'Compressed air is the most expensive factory utility.', savings:80, pts:100},
-      {x:20, y:8, w:2, h:2, label:'Bay Doors', danger:true, e:'🚪',
-       situation:'Large loading door left open while AC is ON.', choices:['Close door / use strip curtains','Turn AC up higher','Open all doors for breeze'], goodIdx:0, gout:'Curtains keep expensive cooled air inside.', bout:'Cooling the outdoors is impossible.', fact:'HVAC escapes instantly from open bays.', savings:90, pts:100},
-      {x:20, y:15, w:2, h:2, label:'Office AC', danger:true, e:'❄', 
-       situation:'Manager office empty, AC freezing.', choices:['Turn off when empty','Leave ON for return','Add a space heater'], goodIdx:0, gout:'Never cool empty spaces.', bout:'Space heater + AC fights each other.', fact:'Zoned AC saves commercial power.', savings:30, pts:100},
-      {x:6, y:18, w:2, h:2, label:'High Bay Lights', danger:true, e:'💡',
-       situation:'Old metal halide warehouse lights.', choices:['Retrofit with High-Bay LEDs','Remove half the bulbs','Keep them'], goodIdx:0, gout:'LED retrofits save 60% lighting costs.', bout:'Removing bulbs causes safety issues.', fact:'Industrial LEDs pay for themselves in 1 year.', savings:120, pts:100}
+      {x:3, y:9, w:2, h:2, label:'Coal Boiler', danger:false, e:'🔥', chapter:'Electricity Sources',
+       situation:'The plant runs on a coal boiler. Put the coal power chain in the right order.', choices:['Coal burns → heats water to steam → steam spins turbine → generator makes electricity','Coal burns → generator → turbine → steam','Coal → solar panel → battery → electricity'], goodIdx:0, gout:'Correct! Burning coal heats water into steam, which spins a turbine connected to a generator.', bout:'The turbine must spin the generator; steam comes before the turbine, not after.', fact:'Coal, gas and oil are conventional (fossil) sources that work by direct combustion.', savings:80, pts:100},
+      {x:11, y:8, w:2, h:2, label:'Air Compressor', danger:true, e:'💨', chapter:'Electricity Sources',
+       situation:'The factory wants a cleaner electricity source. Which of these is RENEWABLE?', choices:['Solar power','Natural gas','Diesel'], goodIdx:0, gout:'Solar is renewable; gas and diesel are fossil fuels.', bout:'Natural gas and diesel are conventional fossil fuels, not renewable.', fact:'Renewable sources: hydro, wind, biomass, solar. Conventional: coal, gas, oil, nuclear.', savings:80, pts:100},
+      {x:20, y:9, w:2, h:2, label:'Backup Generator', danger:true, e:'🛢️', chapter:'Electricity Sources',
+       calc:{given:[['Generator output','2 kW'],['Run time','3 h/day'],['Formula','kWh = kW × h']], ask:'Daily energy produced by the diesel generator?'},
+       situation:'A 2 kW diesel backup generator runs 3 hours a day. How much energy does it produce daily?', choices:['6 kWh/day','5 kWh/day','23 kWh/day'], goodIdx:0, gout:'2 kW × 3 h = 6 kWh/day.', bout:'Multiply power by hours: 2 × 3.', fact:'Diesel generators are a conventional, high-emission source — useful as backup but costly to run.', savings:90, pts:100},
+      {x:20, y:16, w:2, h:2, label:'Solar Inverter', danger:false, e:'☀️', chapter:'Electricity Sources',
+       situation:'Rooftop solar panels feed a solar inverter. What does the inverter actually do?', choices:['Converts panel DC into usable AC electricity','Burns fuel to make heat','Stores coal for later'], goodIdx:0, gout:'Right — panels make DC, the inverter turns it into AC the factory can use.', bout:'Solar is combustion-free; the inverter just converts DC to AC.', fact:'Solar PV is the fastest-growing renewable source worldwide.', savings:30, pts:100},
+      {x:6, y:16, w:2, h:2, label:'High Bay Lights', danger:true, e:'💡', chapter:'Electricity Sources',
+       situation:'Management debates fossil vs renewable supply. Which is a TRUE advantage of fossil-fuel electricity?', choices:['Reliable output regardless of weather','Produces no emissions','Is an unlimited resource'], goodIdx:0, gout:'Fossil plants give steady output any time — that reliability is their main strength.', bout:'Fossil fuels do emit greenhouse gases and are finite, so those cannot be advantages.', fact:'Fossil fuels are reliable but polluting and finite; renewables are clean but variable.', savings:120, pts:100}
     ]
   },
   // STAGE 4: THE OFFICE
@@ -420,27 +443,32 @@ var gameData = [
     furniture: [
       {x:2,y:3,w:4,h:4,c:'#C0C5C8', e:'💻', lbl:'Desk 1'},
       {x:8,y:3,w:4,h:4,c:'#C0C5C8', e:'💻', lbl:'Desk 2'},
-      {x:19,y:4,w:3,h:4,c:'#C0C5C8', e:'🗄️', lbl:'Table'}, 
-      {x:18,y:14,w:4,h:3,c:'#D0CACA', e:'☕', lbl:'Counter'}
+      {x:8,y:9,w:4,h:3,c:'#7C2D3A', e:'🟥', lbl:'Rug', noCollide:true},
+      {x:19,y:6,w:3,h:2,c:'#8B5A38', e:'🪑', lbl:'Meeting Table'},
+      {x:18,y:17,w:4,h:2,c:'#C66459', e:'🛋️', lbl:'Sofa'},
+      {x:18,y:14,w:3,h:2,c:'#D0CACA', e:'☕', lbl:'Counter'},
+      {x:10,y:19,w:3,h:3,c:'#7D8A99', e:'🗄️', lbl:'Utility Cabinet'}
     ],
     decor: [
-      {x:21,y:14,w:2,h:2,e:'🚰'}
+      {x:22,y:21,w:2,h:2,e:'🪴'},
+      {x:1,y:14,w:2,h:2,e:'🪴'}
     ],
     pets: [
       { x: 5, y: 10, radius: 0.4, baseVx: 0.04, baseVy: 0.04, emoji: '🦮' },
-      { x: 19, y: 18, radius: 0.4, baseVx: -0.05, baseVy: 0.05, emoji: '🤖' }
+      { x: 22, y: 18, radius: 0.4, baseVx: -0.05, baseVy: 0.05, emoji: '🤖' }
     ],
     spots: [
-      {x:13, y:5, w:2, h:2, label:'Printers', danger:true, e:'🖨️',
-       situation:'3 laser printers left ON overnight.', choices:['Enable deep sleep mode','Leave them on to warm up','Unplug permanently'], goodIdx:0, gout:'Deep sleep cuts standby power by 90%.', bout:'Standby wastes commercial energy.', fact:'Commercial printers draw high idle power.', savings:45, pts:100},
-      {x:19, y:2, w:3, h:2, label:'Meeting Room', danger:true, e:'💡', 
-       situation:'Empty room, lights and projector ON.', choices:['Install occupancy sensors','Leave them on for next meeting','Remove the projector'], goodIdx:0, gout:'Sensors guarantee lights turn off.', bout:'Leaving them on wastes money.', fact:'Sensors save 30% of office lighting costs.', savings:35, pts:100},
-      {x:4, y:11, w:2, h:2, label:'PCs', danger:true, e:'🖥️',
-       situation:'Employee PCs left running screen savers.', choices:['Set PCs to sleep after 15 mins','Use darker screen savers','Turn off monitors only'], goodIdx:0, gout:'Sleep mode saves hardware and power.', bout:'Screen savers use FULL power.', fact:'Screen savers do NOT save energy.', savings:55, pts:100},
-      {x:19, y:20, w:2, h:2, label:'Vending Machine', danger:true, e:'🥤',
-       situation:'Vending lights/compressor run 24/7.', choices:['Install a VendingMiser sensor','Unplug it','Remove all lights'], goodIdx:0, gout:'Sensors power down machines when empty.', bout:'Unplugging ruins the food/drinks.', fact:'Vending machines use massive power 24/7.', savings:30, pts:100},
-      {x:5, y:19, w:2, h:2, label:'Elevator', danger:true, e:'🛗',
-       situation:'Staff taking elevator for 1 floor up.', choices:['Promote "Take the Stairs" campaign','Speed up the elevator','Limit to 5 people max'], goodIdx:0, gout:'Stairs improve health and save motor energy.', bout:'Speeding up uses more power.', fact:'Elevator motors draw heavy peak current.', savings:20, pts:100}
+      {x:13, y:20, w:2, h:2, label:'Smart Meter', danger:true, e:'📟', chapter:'Smart Meters & Tariff',
+       calc:{given:[['Last reading','100 kWh'],['This reading','140 kWh'],['Formula','used = new − old']], ask:'How many kWh were used?'},
+       situation:'The office smart meter read 100 kWh before and 140 kWh now. How much energy was used?', choices:['40 kWh','240 kWh','140 kWh'], goodIdx:0, gout:'Used = 140 − 100 = 40 kWh.', bout:'Subtract the old reading from the new one: 140 − 100.', fact:'A smart meter records usage automatically and sends it to TNB for accurate billing.', savings:45, pts:100},
+      {x:19, y:2, w:3, h:2, label:'Meeting Room', danger:false, e:'💡', chapter:'Smart Meters & Tariff',
+       situation:'How is a smart meter different from a traditional meter?', choices:['It sends readings to the utility automatically in near real-time','It uses no electricity at all','It only works during the day'], goodIdx:0, gout:'Smart meters communicate digitally with the utility, giving accurate near real-time data.', bout:'Both meters measure usage; the smart one differs by communicating remotely.', fact:'Malaysia (TNB) is rolling out smart meters; you can track usage in the myTNB app.', savings:35, pts:100},
+      {x:4, y:5, w:2, h:2, label:'Office PCs', danger:true, e:'🖥️', chapter:'Smart Meters & Tariff',
+       situation:'Several office PCs stay fully on overnight. What is the best simple fix?', choices:['Enable sleep mode and shut them down after work','Leave every screen on','Switch off the smart meter'], goodIdx:0, gout:'Sleep mode and shutdowns cut after-hours electricity use.', bout:'Screens and PCs still use power when left on; the meter should never be switched off.', fact:'Smart meter data helps spot exactly this kind of after-hours waste.', savings:55, pts:100},
+      {x:19, y:20, w:2, h:2, label:'Vending Machine', danger:false, e:'🥤', chapter:'Smart Meters & Tariff',
+       situation:'The bill spiked and the smart meter shows heavy overnight use. The likely culprit is the vending machine. Best response?', choices:['Fit a sensor so it powers down when idle at night','Ignore it — meters are always wrong','Unplug it and lose all the stock'], goodIdx:0, gout:'A sensor cuts needless overnight running — exactly what the meter data revealed.', bout:'Smart meter data is accurate; unplugging spoils the stock.', fact:'Smart meters turn vague bills into clear data you can act on.', savings:30, pts:100},
+      {x:5, y:19, w:2, h:2, label:'Server Rack', danger:true, e:'🗄️', chapter:'Smart Meters & Tariff',
+       situation:'A small server rack runs 24/7. Using tariff billing, how do you cut its cost?', choices:['Consolidate to fewer machines and enable power management','Run more servers to share the load','Switch the meter off at night'], goodIdx:0, gout:'Fewer, power-managed machines lower the kWh that gets billed.', bout:'You cannot switch off the meter; adding servers raises the bill.', fact:'Every kWh saved is billed at the tariff rate — cutting usage cuts cost directly.', savings:20, pts:100}
     ]
   },
   // STAGE 5: THE CITY PARK
@@ -448,33 +476,35 @@ var gameData = [
     name: "The City Park", icon: "⛲", bg: "#152515", startX: 12, startY: 5,
     rooms: [
       {label:'Walkway', x:1, y:1, w:23, h:8, rc:'#B5A595', pt:'check'},
-      {label:'Pond Area', x:1, y:10, w:15, h:14, rc:'#85B5D5', pt:'dots'},
+      {label:'Pond Area', x:1, y:10, w:15, h:14, rc:'#8EC77A', pt:'dots'},
       {label:'Gazebo', x:17, y:12, w:7, h:10, rc:'#D5C5B5', pt:'lines'}
     ],
     furniture: [
-      {x:4,y:3,w:3,h:2,c:'#958575', e:'🪑', lbl:'Bench'},
+      {x:5,y:3,w:3,h:2,c:'#958575', e:'🪑', lbl:'Bench'},
       {x:14,y:3,w:3,h:2,c:'#958575', e:'🪑', lbl:'Bench'},
-      {x:6,y:14,w:5,h:5,c:'#6595B5', e:'💧', lbl:'Water'},
-      {x:19,y:15,w:3,h:3,c:'#B5A595', e:'🛖', lbl:'Table'} 
+      {x:10,y:18,w:5,h:5,c:'#6595B5', e:'💧', lbl:'Water'},
+      {x:1,y:18,w:4,h:4,c:'#609040', e:'🌲', lbl:'Tree'},
+      {x:19,y:15,w:3,h:3,c:'#B5A595', e:'🛖', lbl:'Table'}
     ],
     decor: [
-      {x:14,y:6,w:2,h:2,e:'🧺'}
+      {x:17,y:18,w:2,h:2,e:'🪴'}
     ],
     pets: [
       { x: 8, y: 16, radius: 0.4, baseVx: 0.04, baseVy: 0.02, emoji: '🦆' },
-      { x: 4, y: 20, radius: 0.4, baseVx: -0.06, baseVy: 0.05, emoji: '🐸' }
+      { x: 6, y: 20, radius: 0.4, baseVx: -0.06, baseVy: 0.05, emoji: '🐸' }
     ],
     spots: [
-      {x:10, y:4, w:2, h:2, label:'Streetlights', danger:true, e:'💡',
-       situation:'Streetlights are ON during bright daylight.', choices:['Fix the daylight photocell sensor','Remove half the bulbs','Keep them on for extra safety'], goodIdx:0, gout:'Photocells automate lights perfectly.', bout:'Daylight lighting is 100% wasted.', fact:'City lighting is a massive municipal cost.', savings:200, pts:100},
-      {x:8, y:15, w:2, h:2, label:'Fountain', danger:true, e:'⛲',
-       situation:'Huge water pump runs at 3 AM.', choices:['Timer for active park hours only','Run it faster to clean water','Turn it off forever'], goodIdx:0, gout:'Timers save massive public funds.', bout:'Running faster wastes more.', fact:'Industrial water pumps draw immense power.', savings:150, pts:100},
-      {x:2, y:5, w:2, h:2, label:'E-Bike Dock', danger:true, e:'🚲',
-       situation:'Chargers supplying power to full bikes.', choices:['Smart docks that stop when 100%','Unplug the whole station','Lower the charging speed'], goodIdx:0, gout:'Smart charging protects batteries & grid.', bout:'Lower speed just takes longer.', fact:'Overcharging degrades lithium batteries.', savings:40, pts:100},
-      {x:20, y:13, w:2, h:2, label:'Public Fridge', danger:true, e:'🧊', 
-       situation:'Community fridge door left wide open.', choices:['Add a self-closing spring hinge','Turn up the thermostat','Unplug it'], goodIdx:0, gout:'Self-closing doors guarantee efficiency.', bout:'Turning it up ruins food.', fact:'Open fridges run compressors endlessly.', savings:30, pts:100},
-      {x:20, y:4, w:2, h:2, label:'Trash Bins', danger:true, e:'♻️',
-       situation:'Aluminum cans thrown in regular trash.', choices:['Install clear recycling bins','Burn the trash','Compact the trash more'], goodIdx:0, gout:'Recycling aluminum saves 95% energy!', bout:'Burning creates toxic emissions.', fact:'Making new aluminum takes massive electricity.', savings:80, pts:100}
+      {x:10, y:4, w:2, h:2, label:'Solar Streetlights', danger:false, e:'💡', chapter:'Energy Mix',
+       situation:'The park adds solar-powered streetlights to its energy mix. In an "energy mix", what does that term mean?', choices:['The combination of different energy sources supplying power','A single fuel powering everything','Only the imported energy'], goodIdx:0, gout:'An energy mix is the blend of sources (coal, gas, hydro, solar…) that supply electricity.', bout:'No country relies on just one source; a mix gives security and stability.', fact:'A balanced mix protects against price spikes if one source becomes scarce.', savings:50, pts:100},
+      {x:18, y:6, w:2, h:2, label:'Grid Supply', danger:true, e:'🔌', chapter:'Energy Mix',
+       calc:{given:[['Total energy mix','100 parts'],['Solar','10 parts'],['Formula','share = part ÷ total']], ask:'Solar\'s % share of the total mix?'},
+       situation:'The park grid mix has 100 parts of energy. Solar provides 10 parts. What percent comes from solar?', choices:['10%','50%','90%'], goodIdx:0, gout:'10 out of 100 parts is 10%.', bout:'Percent means parts out of 100. Solar is 10 out of 100.', fact:'% contribution shows how much each source adds to the overall mix.', savings:60, pts:100},
+      {x:2, y:5, w:2, h:2, label:'Solar Carport', danger:true, e:'☀️', chapter:'Energy Mix',
+       situation:'The carport roof has solar panels. Which statement is true?', choices:['Solar is a renewable energy source','Solar is a fossil fuel','Solar only works by burning diesel'], goodIdx:0, gout:'Solar is renewable because sunlight is naturally replenished.', bout:'Solar panels use sunlight; they do not burn fossil fuels.', fact:'Hydro, solar, wind and biomass are renewable; coal and gas are fossil.', savings:40, pts:100},
+      {x:20, y:13, w:2, h:2, label:'Public Fridge', danger:false, e:'🧊', chapter:'Energy Mix',
+       situation:'Electricity is called an "energy currency". Why?', choices:['It is generated from primary sources, then distributed for any use','It is a primary energy source on its own','It can only power fridges'], goodIdx:0, gout:'Like money, electricity is produced from coal, gas, hydro or solar, then used flexibly.', bout:'Electricity is not a primary source — it is made from other sources.', fact:'Electricity is the most versatile form of energy, hence "energy currency".', savings:30, pts:100},
+      {x:21, y:4, w:2, h:2, label:'Recycling Point', danger:true, e:'♻️', chapter:'Energy Mix',
+       situation:'A country imports much of its coal and gas. What risk does high import dependence create in its energy mix?', choices:['Vulnerability to global price and supply shocks','Guaranteed cheaper electricity forever','It removes the need for renewables'], goodIdx:0, gout:'Relying on imports exposes a country to world price swings and supply risk.', bout:'Imports do not guarantee low prices, and they raise — not remove — the case for local renewables.', fact:'A mix of domestic and imported energy, including renewables, improves energy security.', savings:80, pts:100}
     ]
   }
 ];
@@ -487,14 +517,18 @@ var furnMsgs = {
   'Bed': 'You take a quick rest on the Bed. So cozy!',
   'Desk': 'You sit at the Desk and quickly organize some papers.',
   'Table': 'You sit at the Table. It is sturdy and clean.',
+  'Meeting Table': 'The meeting table is ready for a quick team discussion.',
   'Tree': 'You stand under the Tree and enjoy the fresh shade.',
   'Flowers': 'You smell the Flowers. They are blooming beautifully!',
+  'Pool': 'The pool is clean, with the pump and filter nearby.',
   'Tools': 'You inspect the Tools. Everything is organized.',
   'Machine A': 'The machine is humming along smoothly.',
   'Machine B': 'The gears are turning perfectly.',
   'Crates': 'Just some heavy wooden crates.',
+  'Pallets': 'The pallets are stacked neatly in the storage area.',
   'Desk 1': 'A tidy workspace ready for productivity.',
   'Desk 2': 'Someone left a neat stack of files here.',
+  'Utility Cabinet': 'You check the utility cabinet. Spare cables and labels are neatly stored inside.',
   'Counter': 'A clean counter, perfect for making a cup of coffee.',
   'Bench': 'You sit on the Bench and watch the world go by.',
   'Water': 'You splash some cool water. Refreshing!'
@@ -773,6 +807,51 @@ var spotVisualLibrary = {
     '<rect x="184" y="116" width="48" height="86" rx="12" fill="#F59E0B" stroke="#B45309" stroke-width="5"/>' +
     '<rect x="176" y="102" width="64" height="16" rx="8" fill="#D97706"/>',
     {top:'#ECFDF5', bottom:'#D1FAE5', accent:'#22C55E'}),
+  coalboiler: makeVisualCard('Coal Boiler', 'Fossil fuel combustion',
+    '<rect x="96" y="96" width="92" height="108" rx="14" fill="#374151" stroke="#111827" stroke-width="6"/>' +
+    '<rect x="116" y="150" width="52" height="44" rx="8" fill="#1F2937"/>' +
+    '<g stroke="#F97316" stroke-width="9" stroke-linecap="round"><path d="M130 188 C130 172 140 166 140 152"/><path d="M142 188 C142 168 153 160 153 144"/><path d="M156 188 C156 174 164 168 164 154"/></g>' +
+    '<rect x="188" y="70" width="26" height="134" rx="6" fill="#6B7280"/>' +
+    '<g fill="#9CA3AF" opacity="0.8"><circle cx="201" cy="64" r="14"/><circle cx="216" cy="50" r="11"/><circle cx="192" cy="44" r="9"/></g>',
+    {top:'#FEF3E6', bottom:'#FBD9B5', accent:'#F97316'}),
+  generator: makeVisualCard('Backup Generator', 'Conventional diesel power',
+    '<rect x="84" y="118" width="152" height="74" rx="14" fill="#4B5563" stroke="#1F2937" stroke-width="6"/>' +
+    '<rect x="100" y="134" width="60" height="42" rx="8" fill="#9CA3AF"/>' +
+    '<rect x="170" y="134" width="52" height="42" rx="8" fill="#374151"/>' +
+    '<circle cx="110" cy="200" r="14" fill="#111827"/><circle cx="210" cy="200" r="14" fill="#111827"/>' +
+    '<rect x="150" y="86" width="16" height="36" rx="4" fill="#6B7280"/>' +
+    '<g fill="#9CA3AF" opacity="0.75"><circle cx="158" cy="80" r="10"/><circle cx="170" cy="68" r="8"/></g>' +
+    '<text x="130" y="162" font-family="Arial" font-size="20" font-weight="800" fill="#1F2937">⚡</text>',
+    {top:'#EEF2F7', bottom:'#D9E0E7', accent:'#6B7280'}),
+  solar: makeVisualCard('Solar / Inverter', 'Clean renewable power',
+    '<rect x="78" y="92" width="120" height="80" rx="8" fill="#1E3A8A" stroke="#1E40AF" stroke-width="5" transform="skewX(-8)"/>' +
+    '<g stroke="#60A5FA" stroke-width="3" transform="skewX(-8)"><path d="M108 92 L108 172"/><path d="M138 92 L138 172"/><path d="M168 92 L168 172"/><path d="M78 118 L198 118"/><path d="M78 145 L198 145"/></g>' +
+    '<circle cx="232" cy="80" r="22" fill="#FBBF24"/>' +
+    '<g stroke="#F59E0B" stroke-width="5" stroke-linecap="round"><path d="M232 44 L232 52"/><path d="M258 54 L252 60"/><path d="M268 80 L260 80"/></g>' +
+    '<rect x="150" y="180" width="60" height="40" rx="8" fill="#E5E7EB" stroke="#64748B" stroke-width="4"/>' +
+    '<text x="180" y="206" text-anchor="middle" font-family="Arial" font-size="16" font-weight="800" fill="#16A34A">AC</text>',
+    {top:'#EAF4FF', bottom:'#D6E9FF', accent:'#2563EB'}),
+  smartmeter: makeVisualCard('Smart Meter', 'Records and sends usage',
+    '<rect x="104" y="80" width="112" height="140" rx="18" fill="#F8FAFC" stroke="#94A3B8" stroke-width="6"/>' +
+    '<rect x="122" y="100" width="76" height="44" rx="8" fill="#0F172A"/>' +
+    '<text x="160" y="130" text-anchor="middle" font-family="monospace" font-size="22" font-weight="800" fill="#34D399">13200</text>' +
+    '<text x="190" y="142" text-anchor="end" font-family="monospace" font-size="10" fill="#34D399">kWh</text>' +
+    '<g fill="#CBD5E1"><circle cx="134" cy="166" r="9"/><circle cx="160" cy="166" r="9"/><circle cx="186" cy="166" r="9"/></g>' +
+    '<g stroke="#2563EB" stroke-width="4" fill="none" stroke-linecap="round"><path d="M150 196 C150 188 170 188 170 196"/><path d="M142 202 C148 188 172 188 178 202"/></g>',
+    {top:'#F1F5F9', bottom:'#DCE7F5', accent:'#2563EB'}),
+  serverrack: makeVisualCard('Server Rack', 'Consolidate and manage power',
+    '<rect x="112" y="74" width="96" height="152" rx="10" fill="#1F2937" stroke="#111827" stroke-width="6"/>' +
+    '<g fill="#374151" stroke="#4B5563" stroke-width="2"><rect x="124" y="86" width="72" height="22" rx="4"/><rect x="124" y="114" width="72" height="22" rx="4"/><rect x="124" y="142" width="72" height="22" rx="4"/><rect x="124" y="170" width="72" height="22" rx="4"/></g>' +
+    '<g fill="#34D399"><circle cx="136" cy="97" r="3"/><circle cx="136" cy="125" r="3"/><circle cx="136" cy="153" r="3"/><circle cx="136" cy="181" r="3"/></g>' +
+    '<g fill="#60A5FA"><circle cx="148" cy="97" r="3"/><circle cx="148" cy="125" r="3"/></g>',
+    {top:'#EEF2F7', bottom:'#D9E0E7', accent:'#374151'}),
+  television: makeVisualCard('Television', 'Switch off, avoid standby',
+    '<rect x="82" y="86" width="156" height="100" rx="12" fill="#0F172A" stroke="#334155" stroke-width="6"/>' +
+    '<rect x="96" y="100" width="128" height="72" rx="6" fill="#1E293B"/>' +
+    '<path d="M120 168 L200 168 L210 196 L110 196 Z" fill="#94A3B8"/>' +
+    '<circle cx="214" cy="178" r="6" fill="#EF4444"/>' +
+    '<g fill="#38BDF8" opacity="0.5"><circle cx="135" cy="130" r="10"/><circle cx="160" cy="136" r="7"/></g>',
+    {top:'#EEF2F7', bottom:'#D9E0E7', accent:'#0F172A'}),
   generic: makeVisualCard('Energy Device', 'Investigate the energy issue',
     '<circle cx="160" cy="142" r="58" fill="#DBEAFE" stroke="#60A5FA" stroke-width="6"/>' +
     '<path d="M160 98 L172 130 L206 130 L178 150 L188 184 L160 164 L132 184 L142 150 L114 130 L148 130 Z" fill="#2563EB"/>',
@@ -784,13 +863,19 @@ var spotVisualMap = {
   'Office AC': 'officeac',
   'Water Heater': 'waterheater',
   'Fridge': 'fridge',
+  'Refrigerator': 'fridge',
+  'Television': 'television',
   'Public Fridge': 'publicfridge',
   'Bulbs': 'lighting',
+  'LED Lamps': 'lighting',
   'High Bay Lights': 'highbay',
   'Streetlights': 'streetlights',
+  'Solar Streetlights': 'streetlights',
   'Floodlights': 'floodlights',
   'Meeting Room': 'meetingroom',
   'Standby Tech': 'standbytech',
+  'Phone Chargers': 'plug',
+  'Grid Supply': 'plug',
   'Electric Mower': 'mower',
   'E-Bike Dock': 'ebikedock',
   'Sprinklers': 'sprinklers',
@@ -798,13 +883,21 @@ var spotVisualMap = {
   'Fountain': 'fountain',
   'Patio Heater': 'patioheater',
   'Conveyor': 'conveyor',
+  'Coal Boiler': 'coalboiler',
   'Air Compressor': 'compressor',
   'Bay Doors': 'baydoors',
+  'Backup Generator': 'generator',
+  'Solar Inverter': 'solar',
+  'Solar Carport': 'solar',
   'Printers': 'printer',
   'PCs': 'pc',
+  'Office PCs': 'pc',
+  'Smart Meter': 'smartmeter',
+  'Server Rack': 'serverrack',
   'Vending Machine': 'vending',
   'Elevator': 'elevator',
-  'Trash Bins': 'trashbins'
+  'Trash Bins': 'trashbins',
+  'Recycling Point': 'trashbins'
 };
 
 function getSpotVisualSrc(spot) {
@@ -818,32 +911,34 @@ function commonsPhoto(fileName, width) {
          encodeURIComponent(fileName) + '?width=' + width;
 }
 
+// Prefer real Wikimedia/Wikipedia photos; each challenge still falls back to
+// the built-in illustration if the external photo cannot load.
 var spotPhotoFiles = {
-  'AC Unit': 'Air conditioner indoor unit.jpg',
-  'Office AC': 'Air conditioner indoor unit.jpg',
-  'Water Heater': 'Electric water heater.jpg',
-  'Fridge': 'Inside domestic refrigerator.JPG',
-  'Public Fridge': 'Plant-Based Community Fridge.jpg',
-  'Bulbs': 'LED bulb.jpg',
-  'High Bay Lights': 'Interior of warehouse.jpg',
-  'Streetlights': 'Street light.jpg',
-  'Floodlights': 'Floodlight.jpg',
-  'Meeting Room': 'Conference room.jpg',
-  'Standby Tech': 'Power strip.jpg',
-  'Electric Mower': 'Electric lawn mower.jpg',
-  'E-Bike Dock': 'Electric bicycle charging station.jpg',
-  'Sprinklers': 'Lawn sprinkler.jpg',
-  'Pool Pump': 'Pool pump.jpg',
-  'Fountain': 'Water fountain.jpg',
-  'Patio Heater': 'Patio heater.jpg',
-  'Conveyor': 'Conveyor belt.jpg',
-  'Air Compressor': 'Air compressor.jpg',
-  'Bay Doors': 'Warehouse Loading Dock.JPG',
-  'Printers': 'Laser printer.jpg',
-  'PCs': 'Personal computer.jpg',
-  'Vending Machine': 'Vending machine Suntory.jpg',
-  'Elevator': 'Elevator interior.jpg',
-  'Trash Bins': 'Recycling bins.jpg'
+  'AC Unit': 'Daikin_2014_(cropped).jpg',
+  'Refrigerator': 'A_Samsung_Refrigerator.jpg',
+  'Television': 'Samsung_LE26R41BD_and_Yamada_DVD_player_20030624.jpg',
+  'LED Lamps': 'Led-lampa.jpg',
+  'Phone Chargers': 'IPhone_14_Plus_connected_to_a_charger.jpg',
+  'Floodlights': 'LED_floodlights.jpg',
+  'Sprinklers': 'Irrigational_sprinkler.jpg',
+  'Electric Mower': 'Robomow_110_City_2012-06-05.jpg',
+  'Pool Pump': '61201-BB_Lifestyle_Comp.jpg',
+  'Patio Heater': 'Patio_heater.jpg',
+  'Coal Boiler': 'Wheatland_NM_School_Gym_Boiler.jpg',
+  'Air Compressor': 'Air_compressor.webp',
+  'Backup Generator': 'Mobile_electric_generator.jpg',
+  'Solar Inverter': 'Sunny_Boy_3000.jpg',
+  'High Bay Lights': 'Intex_types_of_recessed_lighting_in_a_warehouse.jpg',
+  'Smart Meter': 'Itron_OpenWay_Electricity_Meter_with_Two-Way_Communications.JPG',
+  'Meeting Room': 'Conferenceroom2.JPG',
+  'Office PCs': 'ThinkCentre_S50.jpg',
+  'Vending Machine': 'HK_Sunday_night_West_Kln_Promenade_Food_Vending_Machine_小食_01.JPG',
+  'Server Rack': 'Cern_datacenter.jpg',
+  'Solar Streetlights': 'Solar_lamp,_Victoria,_British_Columbia,_Canada_03.jpg',
+  'Grid Supply': '500kV_3-Phase_Transmission_Lines.png',
+  'Solar Carport': 'Parking_under_Solar_Canopy_(52937580768).jpg',
+  'Recycling Point': 'Kuala_Lumpur_Malaysia_KLIA-Recycling-Bin-01.jpg',
+  'Public Fridge': 'Community_Fridge_Fredric_Douglas_Housing_New_York_City_-_Side_View_(cropped).jpg'
 };
 
 function getSpotPhotoSrc(spot) {
@@ -902,11 +997,13 @@ function drawPlantCluster(x, y, w, h) {
 function drawFlowerBed(x, y, w, h) {
   ctx.save();
   ctx.translate(x, y);
-  ctx.fillStyle = '#78A95A';
-  ctx.fillRect(0, h * 0.68, w, h * 0.18);
   for (var i = 0; i < 10; i++) {
     var fx = w * (0.08 + i * 0.09);
     var stemTop = h * (0.32 + (i % 3) * 0.08);
+    ctx.fillStyle = 'rgba(72, 116, 49, 0.28)';
+    ctx.beginPath();
+    ctx.ellipse(fx, h * 0.80, w * 0.035, h * 0.025, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.strokeStyle = '#4E8B43';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -980,6 +1077,178 @@ function drawTreeIllustration(x, y, w, h) {
   ctx.restore();
 }
 
+// ---- Detailed furniture illustrations (cozy interior style) ----
+function shadowEllipse(w, h, cx, cy, rx, ry) {
+  ctx.fillStyle = 'rgba(0,0,0,0.14)';
+  ctx.beginPath(); ctx.ellipse(w*cx, h*cy, w*rx, h*ry, 0, 0, Math.PI*2); ctx.fill();
+}
+
+function drawSofa(x, y, w, h) {
+  ctx.save(); ctx.translate(x, y);
+  shadowEllipse(w, h, 0.5, 0.92, 0.42, 0.07);
+  // back
+  ctx.fillStyle = '#B5564B'; roundedRectPath(ctx, w*0.10, h*0.16, w*0.80, h*0.40, Math.min(w,h)*0.12); ctx.fill();
+  // seat base
+  ctx.fillStyle = '#C66459'; roundedRectPath(ctx, w*0.08, h*0.40, w*0.84, h*0.42, Math.min(w,h)*0.12); ctx.fill();
+  // arms
+  ctx.fillStyle = '#A84C42';
+  roundedRectPath(ctx, w*0.04, h*0.34, w*0.16, h*0.46, Math.min(w,h)*0.10); ctx.fill();
+  roundedRectPath(ctx, w*0.80, h*0.34, w*0.16, h*0.46, Math.min(w,h)*0.10); ctx.fill();
+  // cushions
+  ctx.fillStyle = '#D77B70';
+  roundedRectPath(ctx, w*0.23, h*0.44, w*0.26, h*0.26, Math.min(w,h)*0.08); ctx.fill();
+  roundedRectPath(ctx, w*0.52, h*0.44, w*0.26, h*0.26, Math.min(w,h)*0.08); ctx.fill();
+  // highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.18)'; roundedRectPath(ctx, w*0.12, h*0.19, w*0.76, h*0.07, h*0.04); ctx.fill();
+  ctx.restore();
+}
+
+function drawBed(x, y, w, h) {
+  ctx.save(); ctx.translate(x, y);
+  shadowEllipse(w, h, 0.5, 0.95, 0.46, 0.05);
+  // headboard
+  ctx.fillStyle = '#7C4A2D'; roundedRectPath(ctx, w*0.06, h*0.06, w*0.88, h*0.20, Math.min(w,h)*0.10); ctx.fill();
+  // frame
+  ctx.fillStyle = '#8B5A38'; roundedRectPath(ctx, w*0.06, h*0.20, w*0.88, h*0.72, Math.min(w,h)*0.08); ctx.fill();
+  // mattress / blanket
+  ctx.fillStyle = '#C25B52'; roundedRectPath(ctx, w*0.12, h*0.34, w*0.76, h*0.52, Math.min(w,h)*0.07); ctx.fill();
+  // blanket fold
+  ctx.fillStyle = '#D27268'; roundedRectPath(ctx, w*0.12, h*0.62, w*0.76, h*0.24, Math.min(w,h)*0.06); ctx.fill();
+  // pillows
+  ctx.fillStyle = '#F4ECE0';
+  roundedRectPath(ctx, w*0.16, h*0.30, w*0.30, h*0.16, Math.min(w,h)*0.07); ctx.fill();
+  roundedRectPath(ctx, w*0.52, h*0.30, w*0.30, h*0.16, Math.min(w,h)*0.07); ctx.fill();
+  ctx.restore();
+}
+
+function drawBookshelf(x, y, w, h) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = '#6E4A2E'; roundedRectPath(ctx, w*0.08, h*0.06, w*0.84, h*0.88, Math.min(w,h)*0.05); ctx.fill();
+  ctx.fillStyle = '#4A2F1B'; roundedRectPath(ctx, w*0.13, h*0.10, w*0.74, h*0.80, Math.min(w,h)*0.03); ctx.fill();
+  var shelves = 3, bookCols = ['#C0504D','#4F81BD','#9BBB59','#8064A2','#F0A030','#4BACC6'];
+  for (var s=0; s<shelves; s++) {
+    var sy = h*0.12 + s*(h*0.78/shelves);
+    var sh = h*0.78/shelves - h*0.04;
+    // books
+    var n = 7, bw = w*0.72/n;
+    for (var b=0; b<n; b++) {
+      var bh = sh * (0.7 + ((b*7+s*3)%4)*0.075);
+      ctx.fillStyle = bookCols[(b+s)%bookCols.length];
+      roundedRectPath(ctx, w*0.14 + b*bw + bw*0.1, sy + (sh-bh), bw*0.8, bh, 1); ctx.fill();
+    }
+    // shelf plank
+    ctx.fillStyle = '#5A3B23'; ctx.fillRect(w*0.13, sy+sh, w*0.74, h*0.025);
+  }
+  ctx.restore();
+}
+
+function drawFireplace(x, y, w, h) {
+  ctx.save(); ctx.translate(x, y);
+  // stone surround
+  ctx.fillStyle = '#3A3330'; roundedRectPath(ctx, w*0.10, h*0.10, w*0.80, h*0.82, Math.min(w,h)*0.06); ctx.fill();
+  // inner
+  ctx.fillStyle = '#1C1714'; roundedRectPath(ctx, w*0.22, h*0.30, w*0.56, h*0.58, Math.min(w,h)*0.05); ctx.fill();
+  // logs
+  ctx.fillStyle = '#6E4A2E'; roundedRectPath(ctx, w*0.28, h*0.72, w*0.44, h*0.08, 3); ctx.fill();
+  // flames (animated flicker via tick)
+  var fl = (typeof tick !== 'undefined') ? (Math.sin(tick*0.3)*0.04) : 0;
+  ctx.fillStyle = '#F97316';
+  ctx.beginPath();
+  ctx.moveTo(w*0.5, h*(0.40+fl));
+  ctx.quadraticCurveTo(w*0.36, h*0.62, w*0.42, h*0.74);
+  ctx.quadraticCurveTo(w*0.5, h*0.66, w*0.58, h*0.74);
+  ctx.quadraticCurveTo(w*0.64, h*0.62, w*0.5, h*(0.40+fl));
+  ctx.fill();
+  ctx.fillStyle = '#FBBF24';
+  ctx.beginPath();
+  ctx.moveTo(w*0.5, h*(0.52+fl));
+  ctx.quadraticCurveTo(w*0.44, h*0.64, w*0.47, h*0.73);
+  ctx.quadraticCurveTo(w*0.5, h*0.68, w*0.53, h*0.73);
+  ctx.quadraticCurveTo(w*0.56, h*0.64, w*0.5, h*(0.52+fl));
+  ctx.fill();
+  // mantel
+  ctx.fillStyle = '#7C5A3B'; roundedRectPath(ctx, w*0.06, h*0.06, w*0.88, h*0.10, 3); ctx.fill();
+  ctx.restore();
+}
+
+function drawDiningTable(x, y, w, h) {
+  ctx.save(); ctx.translate(x, y);
+  shadowEllipse(w, h, 0.5, 0.9, 0.42, 0.07);
+  // chairs (top & bottom)
+  ctx.fillStyle = '#6E4A2E';
+  roundedRectPath(ctx, w*0.26, h*0.04, w*0.18, h*0.22, 3); ctx.fill();
+  roundedRectPath(ctx, w*0.56, h*0.04, w*0.18, h*0.22, 3); ctx.fill();
+  roundedRectPath(ctx, w*0.26, h*0.74, w*0.18, h*0.22, 3); ctx.fill();
+  roundedRectPath(ctx, w*0.56, h*0.74, w*0.18, h*0.22, 3); ctx.fill();
+  // table top
+  ctx.fillStyle = '#8B5A38'; roundedRectPath(ctx, w*0.14, h*0.26, w*0.72, h*0.48, Math.min(w,h)*0.08); ctx.fill();
+  ctx.fillStyle = '#9C6A45'; roundedRectPath(ctx, w*0.18, h*0.30, w*0.64, h*0.40, Math.min(w,h)*0.07); ctx.fill();
+  // a little vase of flowers center
+  ctx.fillStyle = '#3E8547'; ctx.beginPath(); ctx.arc(w*0.5, h*0.5, Math.min(w,h)*0.06, 0, Math.PI*2); ctx.fill();
+  ['#EF4444','#F5C542','#E879F9'].forEach(function(c,i){
+    ctx.fillStyle = c; ctx.beginPath();
+    ctx.arc(w*0.5 + Math.cos(i*2.1)*w*0.04, h*0.5 + Math.sin(i*2.1)*h*0.04, Math.min(w,h)*0.03, 0, Math.PI*2); ctx.fill();
+  });
+  ctx.restore();
+}
+
+function drawTVStand(x, y, w, h) {
+  ctx.save(); ctx.translate(x, y);
+  shadowEllipse(w, h, 0.5, 0.92, 0.4, 0.06);
+  // stand
+  ctx.fillStyle = '#6E4A2E'; roundedRectPath(ctx, w*0.12, h*0.62, w*0.76, h*0.26, 4); ctx.fill();
+  // screen
+  ctx.fillStyle = '#1F2937'; roundedRectPath(ctx, w*0.16, h*0.12, w*0.68, h*0.46, 4); ctx.fill();
+  ctx.fillStyle = '#0F172A'; roundedRectPath(ctx, w*0.20, h*0.16, w*0.60, h*0.38, 3); ctx.fill();
+  ctx.fillStyle = 'rgba(96,165,250,0.35)'; roundedRectPath(ctx, w*0.24, h*0.20, w*0.30, h*0.16, 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawStove(x, y, w, h) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = '#9CA3AF'; roundedRectPath(ctx, w*0.14, h*0.18, w*0.72, h*0.74, Math.min(w,h)*0.08); ctx.fill();
+  ctx.fillStyle = '#4B5563'; roundedRectPath(ctx, w*0.20, h*0.46, w*0.60, h*0.40, Math.min(w,h)*0.06); ctx.fill();
+  // burners
+  ctx.fillStyle = '#374151';
+  ctx.beginPath(); ctx.arc(w*0.34, h*0.32, Math.min(w,h)*0.08, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(w*0.64, h*0.32, Math.min(w,h)*0.08, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#F97316';
+  ctx.beginPath(); ctx.arc(w*0.34, h*0.32, Math.min(w,h)*0.035, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawDesk(x, y, w, h) {
+  ctx.save(); ctx.translate(x, y);
+  shadowEllipse(w, h, 0.5, 0.92, 0.4, 0.06);
+  ctx.fillStyle = '#7C5A3B'; roundedRectPath(ctx, w*0.10, h*0.50, w*0.80, h*0.40, 4); ctx.fill();
+  // monitor
+  ctx.fillStyle = '#1F2937'; roundedRectPath(ctx, w*0.30, h*0.16, w*0.40, h*0.30, 3); ctx.fill();
+  ctx.fillStyle = '#60A5FA'; roundedRectPath(ctx, w*0.33, h*0.19, w*0.34, h*0.22, 2); ctx.fill();
+  ctx.fillStyle = '#374151'; ctx.fillRect(w*0.48, h*0.46, w*0.04, h*0.06);
+  ctx.restore();
+}
+
+function drawRug(x, y, w, h) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = '#7C2D3A'; roundedRectPath(ctx, w*0.05, h*0.10, w*0.90, h*0.80, Math.min(w,h)*0.16); ctx.fill();
+  ctx.strokeStyle = '#C9A24A'; ctx.lineWidth = 2;
+  roundedRectPath(ctx, w*0.12, h*0.20, w*0.76, h*0.60, Math.min(w,h)*0.12); ctx.stroke();
+  ctx.fillStyle = 'rgba(201,162,74,0.5)'; ctx.beginPath(); ctx.ellipse(w*0.5, h*0.5, w*0.12, h*0.18, 0, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawBench(x, y, w, h) {
+  ctx.save(); ctx.translate(x, y);
+  shadowEllipse(w, h, 0.5, 0.9, 0.4, 0.07);
+  ctx.fillStyle = '#8B6A45';
+  roundedRectPath(ctx, w*0.08, h*0.40, w*0.84, h*0.18, 3); ctx.fill();
+  roundedRectPath(ctx, w*0.08, h*0.18, w*0.84, h*0.14, 3); ctx.fill();
+  ctx.fillStyle = '#6E4A2E';
+  ctx.fillRect(w*0.16, h*0.56, w*0.06, h*0.30);
+  ctx.fillRect(w*0.78, h*0.56, w*0.06, h*0.30);
+  ctx.restore();
+}
+
 
 function getRoomSurface(stageName, roomLabel) {
   var key = stageName + '|' + roomLabel;
@@ -998,7 +1267,7 @@ function getRoomSurface(stageName, roomLabel) {
     'The Office|Break Room': 'breakTile',
     'The Office|Hallway': 'hallTile',
     'The City Park|Walkway': 'parkPavers',
-    'The City Park|Pond Area': 'pondWater',
+    'The City Park|Pond Area': 'lawn',
     'The City Park|Gazebo': 'deckWood'
   };
   return map[key] || null;
@@ -1196,8 +1465,25 @@ function drawDecorVisual(d) {
 
 function drawFurnitureIllustration(f) {
   var x = f.x * T, y = f.y * T, w = f.w * T, h = f.h * T;
-  if (f.lbl === 'Tree') { drawTreeIllustration(x, y, w, h); return true; }
-  if (f.lbl === 'Flowers') { drawFlowerBed(x, y, w, h); return true; }
+  switch (f.lbl) {
+    case 'Tree': drawTreeIllustration(x, y, w, h); return true;
+    case 'Flowers': drawFlowerBed(x, y, w, h); return true;
+    case 'Sofa': drawSofa(x, y, w, h); return true;
+    case 'Bed': drawBed(x, y, w, h); return true;
+    case 'TV': drawTVStand(x, y, w, h); return true;
+    case 'Stove': drawStove(x, y, w, h); return true;
+    case 'Table': drawDiningTable(x, y, w, h); return true;
+    case 'Meeting Table': drawDiningTable(x, y, w, h); return true;
+    case 'Bench': drawBench(x, y, w, h); return true;
+    case 'Pool':
+    case 'Water': drawPondTexture(x, y, w, h); return true;
+    case 'Desk 1':
+    case 'Desk 2':
+    case 'Desk': drawDesk(x, y, w, h); return true;
+    case 'Bookshelf': drawBookshelf(x, y, w, h); return true;
+    case 'Fireplace': drawFireplace(x, y, w, h); return true;
+    case 'Rug': drawRug(x, y, w, h); return true;
+  }
   return false;
 }
 
@@ -1459,6 +1745,7 @@ function isSolid(fx, fy){
   var stage = gameData[currentStageIdx];
   for(var i=0;i<stage.furniture.length;i++){
     var f=stage.furniture[i];
+    if(f.noCollide) continue;
     if(fx>=f.x && fx<f.x+f.w && fy>=f.y && fy<f.y+f.h) return true;
   }
   for(var i=0;i<stage.spots.length;i++){
@@ -1475,6 +1762,7 @@ function isWalkableForKid(fx, fy) {
   var stage = gameData[currentStageIdx];
   for(var i=0;i<stage.furniture.length;i++){
     var f=stage.furniture[i];
+    if(f.noCollide) continue;
     if(fx>=f.x && fx<f.x+f.w && fy>=f.y && fy<f.y+f.h) return false;
   }
   return true; 
@@ -1547,6 +1835,87 @@ function setTempMsg(msg, duration) {
   tempMsgTimer = duration;
 }
 
+function getFurnitureActivityMeta(f) {
+  if (!f || !f.lbl) return null;
+  if (f.lbl === 'Bed') return { type: 'sleep', verb: 'sleep', msg: 'Sleeping on the bed. Tap E again to get up.' };
+  if (f.lbl === 'Sofa') return { type: 'sofa', verb: 'sit on the sofa', msg: 'Relaxing on the sofa. Tap E again to stand up.' };
+  if (f.lbl === 'Table' || f.lbl === 'Meeting Table') return { type: 'sit', verb: 'sit', msg: 'Sitting at the table. Tap E again to stand up.' };
+  if (f.lbl === 'Bench' || f.lbl === 'Chair') return { type: 'sit', verb: 'sit', msg: 'Sitting on the chair. Tap E again to stand up.' };
+  if (f.lbl === 'Desk' || f.lbl === 'Desk 1' || f.lbl === 'Desk 2' || f.lbl === 'Office PCs') return { type: 'pc', verb: 'play PC', msg: 'Playing on the PC. Tap E again to stop.' };
+  if (f.lbl === 'Pool' || f.lbl === 'Water') return { type: 'swim', verb: 'swim', msg: 'Swimming with a lifebuoy. Tap E again to climb out.' };
+  return null;
+}
+
+function getFurnitureActivityPose(f, type) {
+  var cx = f.x + f.w / 2;
+  var cy = f.y + f.h / 2;
+  if (type === 'sleep') {
+    return { x: cx, y: cy + 0.05, faceDir: 2 };
+  }
+  if (type === 'sofa') {
+    return { x: cx, y: f.y + f.h * 0.58, faceDir: 1 };
+  }
+  if (type === 'swim') {
+    return { x: cx, y: cy, faceDir: 1 };
+  }
+  if (type === 'pc') {
+    return { x: cx, y: f.y + f.h + 0.25, faceDir: 3 };
+  }
+  var bottomSide = player.y >= cy;
+  var sitX = Math.max(f.x + 0.7, Math.min(player.x, f.x + f.w - 0.7));
+  return { x: sitX, y: bottomSide ? f.y + f.h + 0.25 : f.y - 0.25, faceDir: bottomSide ? 3 : 1 };
+}
+
+function isFacingObject(obj) {
+  var cx = obj.x + obj.w / 2;
+  var cy = obj.y + obj.h / 2;
+  var dx = cx - player.x;
+  var dy = cy - player.y;
+  var dist = Math.hypot(dx, dy);
+  if (dist < 0.35) return false;
+  var facing = {
+    0: {x:-1, y:0},
+    1: {x:0, y:1},
+    2: {x:1, y:0},
+    3: {x:0, y:-1}
+  }[player.faceDir] || {x:0, y:1};
+  return ((dx / dist) * facing.x + (dy / dist) * facing.y) > 0.35;
+}
+
+function startFurnitureActivity(f) {
+  var meta = getFurnitureActivityMeta(f);
+  if (!meta) return false;
+  var pose = getFurnitureActivityPose(f, meta.type);
+  furnitureActivity = {
+    type: meta.type,
+    label: f.lbl,
+    msg: meta.msg,
+    x: pose.x,
+    y: pose.y,
+    faceDir: pose.faceDir,
+    prevX: player.x,
+    prevY: player.y,
+    prevFaceDir: player.faceDir
+  };
+  player.moving = false;
+  player.faceDir = pose.faceDir;
+  keys = {w:0, a:0, s:0, d:0, ArrowUp:0, ArrowDown:0, ArrowLeft:0, ArrowRight:0};
+  sfx.pop();
+  return true;
+}
+
+function stopFurnitureActivity() {
+  if (!furnitureActivity) return;
+  player.x = furnitureActivity.prevX;
+  player.y = furnitureActivity.prevY;
+  player.faceDir = furnitureActivity.prevFaceDir;
+  player.moving = false;
+  furnitureActivity = null;
+  keys = {w:0, a:0, s:0, d:0, ArrowUp:0, ArrowDown:0, ArrowLeft:0, ArrowRight:0};
+  setTempMsg("Back to exploring.", 90);
+  sfx.click();
+}
+
 function performKidAction(targetSpot) {
   var actionTaken = false;
   
@@ -1606,6 +1975,13 @@ function performKidAction(targetSpot) {
 
 function updatePhysics() {
   if (gstate !== 'playing') return;
+  if (furnitureActivity) {
+    player.moving = false;
+    if (tempMsgTimer > 0) tempMsgTimer--;
+    updateDoors();
+    checkNear();
+    return;
+  }
   var kx = (keys.ArrowRight || keys.d) - (keys.ArrowLeft || keys.a);
   var ky = (keys.ArrowDown || keys.s) - (keys.ArrowUp || keys.w);
   var dx = joyX || kx; var dy = joyY || ky;
@@ -1734,7 +2110,7 @@ function checkNear(){
     var dist = Math.hypot(player.x - (s.x + s.w/2), player.y - (s.y + s.h/2));
     if(dist <= 3.5){ 
        if (!s.fixed && !s.broken) { nearSpot = s; break; }
-       else if (s.fixed && !s.broken) { nearFixedSpot = s; }
+       else if (s.fixed && !s.broken && isFacingObject(s)) { nearFixedSpot = s; }
     }
   }
   
@@ -1746,14 +2122,15 @@ function checkNear(){
   if(!nearSpot && !nearFixedSpot && !nearPet && !nearKid) {
     for(var i=0;i<stage.furniture.length;i++){
       var f = stage.furniture[i];
-      if(f.noCollide) continue;
       if(Math.hypot(player.x - (f.x + f.w/2), player.y - (f.y + f.h/2)) <= 3.5){ nearFurn = f; break; }
     }
   }
 
   var mb = document.getElementById('msgbar'), btnE = document.getElementById('btn-e');
   
-  if (tempMsgTimer > 0) {
+  if (furnitureActivity) {
+    mb.textContent = furnitureActivity.msg; mb.className = 'highlight'; btnE.classList.add('active');
+  } else if (tempMsgTimer > 0) {
     mb.textContent = tempMsg; mb.className = 'highlight'; btnE.classList.remove('active');
   } else if (nearKid) {
     var kn = (kid.model && kid.model.name) ? kid.model.name : 'A neighbor kid';
@@ -1762,10 +2139,18 @@ function checkNear(){
     mb.textContent = '⚠ ' + nearSpot.label + ' — Tap E to investigate!'; mb.className = 'danger'; btnE.classList.add('active');
   } else if (nearPet) {
     mb.textContent = '🐾 ' + nearPet.emoji + ' ' + (nearPet.name || nearPet.emoji) + ' is hanging around — Tap E to interact!'; mb.className = 'highlight'; btnE.classList.add('active');
+  } else if (nearFixedSpot && nearFixedSpot.label === 'Office PCs') {
+    mb.textContent = '🖥️ Office PCs — Tap E to play on the PC!'; mb.className = 'highlight'; btnE.classList.add('active');
   } else if (nearFixedSpot) {
     mb.textContent = '✨ ' + nearFixedSpot.label + ' — Tap E to view details!'; mb.className = 'highlight'; btnE.classList.add('active');
   } else if (nearFurn) {
-    mb.textContent = '🛋️ ' + nearFurn.lbl + ' — Tap E to interact!'; mb.className = ''; btnE.classList.add('active');
+    var activityMeta = getFurnitureActivityMeta(nearFurn);
+    if (activityMeta) {
+      mb.textContent = nearFurn.lbl + ' — Tap E to ' + activityMeta.verb + '!'; mb.className = 'highlight';
+    } else {
+      mb.textContent = '🛋️ ' + nearFurn.lbl + ' — Tap E to interact!'; mb.className = '';
+    }
+    btnE.classList.add('active');
   } else {
     mb.textContent = 'Explore the area to find energy problems!'; mb.className = ''; btnE.classList.remove('active');
   }
@@ -1811,6 +2196,159 @@ function drawSprite(px, py, moving){
     ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.arc(7.4, -0.6, 0.7, 0, Math.PI*2); ctx.fill();
   }
   ctx.restore();
+}
+
+function drawActivityBubble(text, px, py) {
+  ctx.save();
+  ctx.font = 'bold ' + Math.max(9, Math.floor(T * 0.28)) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  var tx = px * T, ty = py * T - T * 1.05;
+  var tw = Math.min(T * 6.5, ctx.measureText(text).width + 18);
+  var th = T * 0.62;
+  ctx.fillStyle = 'rgba(255,255,255,0.94)';
+  roundedRectPath(ctx, tx - tw / 2, ty - th / 2, tw, th, T * 0.18); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.beginPath();
+  ctx.moveTo(tx - T * 0.14, ty + th / 2 - 1);
+  ctx.lineTo(tx + T * 0.14, ty + th / 2 - 1);
+  ctx.lineTo(tx, ty + th / 2 + T * 0.18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#243447';
+  ctx.fillText(text, tx, ty);
+  ctx.restore();
+}
+
+function drawSleepingPlayer(px, py) {
+  var x = px * T, y = py * T;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(T/20, T/20);
+  ctx.fillStyle = 'rgba(0,0,0,0.16)';
+  ctx.beginPath(); ctx.ellipse(0, 8, 7, 11, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#F5C4B3'; roundedRectPath(ctx, -5, -14, 10, 10, 4); ctx.fill();
+  ctx.fillStyle = '#5a3000'; roundedRectPath(ctx, -6, -15, 12, 4, 3); ctx.fill();
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(-2.8, -9); ctx.lineTo(-0.6, -9); ctx.moveTo(0.9, -9); ctx.lineTo(3.1, -9); ctx.stroke();
+  ctx.fillStyle = '#185FA5'; roundedRectPath(ctx, -6, -3, 12, 11, 3); ctx.fill();
+  ctx.fillStyle = '#2272C0'; roundedRectPath(ctx, -7, 1, 14, 10, 4); ctx.fill();
+  ctx.fillStyle = '#37475A';
+  roundedRectPath(ctx, -5, 10, 4, 5, 1.5); ctx.fill();
+  roundedRectPath(ctx, 1, 10, 4, 5, 1.5); ctx.fill();
+  ctx.fillStyle = '#6B7280';
+  ctx.font = 'bold 7px sans-serif';
+  ctx.fillText('Z', 8 + Math.sin(tick * 0.08) * 1.5, -12);
+  ctx.fillText('z', 14 + Math.sin(tick * 0.08 + 1) * 1.5, -17);
+  ctx.restore();
+}
+
+function drawSittingPlayer(px, py, activeHands, faceDir) {
+  var x = px * T, y = py * T;
+  var facingBack = faceDir === 3;
+  ctx.save();
+  ctx.translate(x, y + Math.sin(tick * 0.08) * 0.5);
+  ctx.scale(T/20, T/20);
+  if (faceDir === 0) ctx.scale(-1, 1);
+  ctx.fillStyle = 'rgba(0,0,0,0.16)';
+  ctx.beginPath(); ctx.ellipse(0, 11, 8, 3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#37475A';
+  roundedRectPath(ctx, -6, 4, 5, 6, 1.5); ctx.fill();
+  roundedRectPath(ctx, 1, 4, 5, 6, 1.5); ctx.fill();
+  ctx.fillStyle = '#185FA5'; roundedRectPath(ctx, -6, -2, 12, 8, 2.5); ctx.fill();
+  var hand = activeHands ? Math.sin(tick * 0.45) * 2 : 0;
+  if (facingBack) {
+    ctx.fillStyle = '#185FA5';
+    roundedRectPath(ctx, -9, -5, 3, 9 + hand, 1.5); ctx.fill();
+    roundedRectPath(ctx, 6, -5, 3, 9 - hand, 1.5); ctx.fill();
+    ctx.fillStyle = '#F5C4B3';
+    ctx.beginPath(); ctx.arc(-7.5, -5 + hand, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(7.5, -5 - hand, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#F5C4B3'; roundedRectPath(ctx, -5, -14, 10, 11, 4); ctx.fill();
+    ctx.fillStyle = '#5a3000';
+    roundedRectPath(ctx, -6, -15, 12, 8, 4); ctx.fill();
+    ctx.fillRect(-6, -9, 2, 4); ctx.fillRect(4, -9, 2, 4);
+  } else {
+    ctx.fillStyle = '#185FA5';
+    roundedRectPath(ctx, -9, 0, 3, 6 + hand, 1.5); ctx.fill();
+    roundedRectPath(ctx, 6, 0, 3, 6 - hand, 1.5); ctx.fill();
+    ctx.fillStyle = '#F5C4B3';
+    ctx.beginPath(); ctx.arc(-7.5, 6 + hand, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(7.5, 6 - hand, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#F5C4B3'; roundedRectPath(ctx, -5, -14, 10, 11, 4); ctx.fill();
+    ctx.fillStyle = '#5a3000'; roundedRectPath(ctx, -6, -15, 12, 5, 3); ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(-1.5, -7.5, 0.9, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(2.5, -7.5, 0.9, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#c0604a'; ctx.lineWidth=0.8; ctx.beginPath(); ctx.moveTo(-1.5, -4); ctx.quadraticCurveTo(0.5, -3.2, 2.5, -4); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawSwimmingPlayer(px, py) {
+  var x = px * T, y = py * T;
+  ctx.save();
+  ctx.translate(x, y + Math.sin(tick * 0.12) * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  for (var i = 0; i < 4; i++) {
+    ctx.beginPath();
+    ctx.arc((i - 1.5) * T * 0.24, T * 0.26, T * 0.12, 0, Math.PI, false);
+    ctx.strokeStyle = 'rgba(255,255,255,0.42)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  ctx.lineWidth = Math.max(6, T * 0.22);
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.beginPath(); ctx.arc(0, 0, T * 0.42, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = '#EF4444';
+  ctx.beginPath(); ctx.arc(0, 0, T * 0.42, -0.35, 0.75); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, T * 0.42, 2.15, 3.25); ctx.stroke();
+
+  ctx.fillStyle = '#F5C4B3';
+  ctx.beginPath(); ctx.arc(0, -T * 0.13, T * 0.18, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#5a3000';
+  ctx.beginPath(); ctx.arc(0, -T * 0.22, T * 0.17, Math.PI, 0, false); ctx.fill();
+  ctx.fillStyle = '#222';
+  ctx.beginPath(); ctx.arc(-T * 0.05, -T * 0.13, T * 0.025, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(T * 0.05, -T * 0.13, T * 0.025, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawPcActivityExtras(px, py) {
+  var x = px * T, y = py * T;
+  ctx.save();
+  ctx.fillStyle = 'rgba(96,165,250,' + (0.22 + Math.sin(tick * 0.18) * 0.08) + ')';
+  ctx.beginPath();
+  ctx.ellipse(x, y - T * 0.85, T * 0.45, T * 0.18, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#38BDF8';
+  ctx.font = 'bold ' + Math.floor(T * 0.36) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(tick % 36 < 18 ? '⌨' : '▶', x, y - T * 0.86);
+  ctx.restore();
+}
+
+function drawFurnitureActivitySprite() {
+  if (!furnitureActivity) return;
+  if (furnitureActivity.type === 'sleep') {
+    drawSleepingPlayer(furnitureActivity.x, furnitureActivity.y);
+    drawActivityBubble('Sleeping... E to get up', furnitureActivity.x, furnitureActivity.y);
+    return;
+  }
+  if (furnitureActivity.type === 'pc') {
+    drawPcActivityExtras(furnitureActivity.x, furnitureActivity.y);
+    drawSittingPlayer(furnitureActivity.x, furnitureActivity.y, true, furnitureActivity.faceDir);
+    drawActivityBubble('Playing PC... E to stop', furnitureActivity.x, furnitureActivity.y);
+    return;
+  }
+  if (furnitureActivity.type === 'swim') {
+    drawSwimmingPlayer(furnitureActivity.x, furnitureActivity.y);
+    drawActivityBubble('Swimming... E to climb out', furnitureActivity.x, furnitureActivity.y);
+    return;
+  }
+  drawSittingPlayer(furnitureActivity.x, furnitureActivity.y, false, furnitureActivity.faceDir);
+  drawActivityBubble(furnitureActivity.type === 'sofa' ? 'Relaxing... E to stand' : 'Sitting... E to stand', furnitureActivity.x, furnitureActivity.y);
 }
 
 function drawKidSprite(px, py, moving, faceDir, model){
@@ -1979,9 +2517,9 @@ function drawGame(){
     }
 
     if(s.fixed){
-      ctx.fillStyle='rgba(29, 158, 117, 0.15)'; 
-      ctx.fillRect(px,py,pw,ph);
-      ctx.strokeStyle='#1D9E75'; ctx.lineWidth=2; ctx.strokeRect(px+1,py+1,pw-2,ph-2);
+      ctx.fillStyle='rgba(29, 158, 117, 0.12)'; 
+      roundedRectPath(ctx, px+2, py+2, pw-4, ph-4, Math.max(4, T*0.12)); ctx.fill();
+      ctx.strokeStyle='#1D9E75'; ctx.lineWidth=2; roundedRectPath(ctx, px+2, py+2, pw-4, ph-4, Math.max(4, T*0.12)); ctx.stroke();
       ctx.fillStyle='#fff'; ctx.font=Math.round(T*0.9)+'px sans-serif';
       ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(s.e, px+pw/2, py+ph/2);
       ctx.fillStyle='#1D9E75'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('SOLVED', px+pw/2, py+ph+2);
@@ -1990,15 +2528,18 @@ function drawGame(){
     
     var pulse=0.5+0.5*Math.sin(tick*0.1);
     var rad = ctx.createRadialGradient(px+pw/2, py+ph/2, T/2, px+pw/2, py+ph/2, T*2);
-    rad.addColorStop(0, `rgba(226,75,74,${0.3*pulse})`); rad.addColorStop(1, 'rgba(0,0,0,0)');
+    rad.addColorStop(0, `rgba(226,75,74,${0.22*pulse})`); rad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = rad; ctx.fillRect(px-T, py-T, pw+T*2, ph+T*2);
-    ctx.fillStyle=`rgba(220,60,60,${0.75+0.25*pulse})`; ctx.fillRect(px,py,pw,ph);
-    ctx.strokeStyle='#7a1a1a'; ctx.lineWidth=2; ctx.strokeRect(px+1,py+1,pw-2,ph-2);
+    ctx.fillStyle=`rgba(226,75,74,${0.16+0.10*pulse})`;
+    roundedRectPath(ctx, px+2, py+2, pw-4, ph-4, Math.max(4, T*0.12)); ctx.fill();
+    ctx.strokeStyle=`rgba(122,26,26,${0.75+0.25*pulse})`; ctx.lineWidth=3;
+    roundedRectPath(ctx, px+2, py+2, pw-4, ph-4, Math.max(4, T*0.12)); ctx.stroke();
     ctx.fillStyle = '#fff'; ctx.font=Math.round(T*0.9)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(s.e, px+pw/2, py+ph/2);
     ctx.fillStyle='#fff'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(s.label, px+pw/2, py+ph+2);
   });
 
-  drawSprite(player.x, player.y, player.moving);
+  if (furnitureActivity) drawFurnitureActivitySprite();
+  else drawSprite(player.x, player.y, player.moving);
 
   var vig = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.35, W/2, H/2, Math.max(W,H)*0.72);
   vig.addColorStop(0, 'rgba(0,0,0,0)');
@@ -2010,6 +2551,7 @@ function drawGame(){
 
 function interact(){
   if(gstate!=='playing') return;
+  if(furnitureActivity) { stopFurnitureActivity(); return; }
   var nearSpot=null, nearFixedSpot=null, nearPet=null, nearFurn=null, stage = gameData[currentStageIdx];
   
   if (kid.active && Math.hypot(player.x - kid.x, player.y - kid.y) <= 3.0) {
@@ -2021,7 +2563,7 @@ function interact(){
     var dist = Math.hypot(player.x - (s.x+s.w/2), player.y - (s.y+s.h/2));
     if(dist <= 3.5){ 
        if (!s.fixed && !s.broken) { nearSpot=s; break; }
-       else if (s.fixed && !s.broken) { nearFixedSpot=s; }
+       else if (s.fixed && !s.broken && isFacingObject(s)) { nearFixedSpot=s; }
     }
   }
   if(nearSpot) { showChallenge(nearSpot); return; }
@@ -2032,14 +2574,22 @@ function interact(){
   }
   if(nearPet) { showPetDialogue(nearPet); return; }
   
-  if(nearFixedSpot) { showFixedDialogue(nearFixedSpot); return; }
+  if(nearFixedSpot) {
+    if (nearFixedSpot.label === 'Office PCs' && nearFixedSpot.fixed) {
+      startFurnitureActivity({x: nearFixedSpot.x, y: nearFixedSpot.y, w: nearFixedSpot.w, h: nearFixedSpot.h, lbl: 'Office PCs', e: '🖥️'});
+      return;
+    }
+    showFixedDialogue(nearFixedSpot); return;
+  }
 
   for(var i=0;i<stage.furniture.length;i++){
     var f = stage.furniture[i];
-    if(f.noCollide) continue;
     if(Math.hypot(player.x - (f.x + f.w/2), player.y - (f.y + f.h/2)) <= 3.5){ nearFurn = f; break; }
   }
-  if(nearFurn) { showFurnitureDialogue(nearFurn); return; }
+  if(nearFurn) {
+    if (startFurnitureActivity(nearFurn)) return;
+    showFurnitureDialogue(nearFurn); return;
+  }
 }
 
 function showFixedDialogue(s) {
@@ -2181,7 +2731,20 @@ function showChallenge(s){
 
   var html=`<div class="sheet-handle"></div>`;
   html+=`<div class="sheet-title" style="margin-bottom: 4px;">${s.label}</div>`;
+  if(s.chapter){ html+=`<div style="display:inline-block;margin-bottom:8px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#EEF2FF;color:#4338CA;">📘 ${s.chapter}</div>`; }
   html+=`<div class="sheet-desc" style="margin-bottom: 12px; font-size: 14px;">${s.situation}</div>`;
+
+  if(s.calc){
+    html+=`<div style="background:#F8FAFC;border:2px solid #E2E8F0;border-radius:14px;padding:10px 12px;margin-bottom:12px;">`;
+    html+=`<div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">🧮 Given</div>`;
+    html+=`<div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;">`;
+    s.calc.given.forEach(g => {
+      html+=`<div><span style="color:#64748B;">${g[0]}:</span> <b style="color:#0F172A;">${g[1]}</b></div>`;
+    });
+    html+=`</div>`;
+    if(s.calc.ask){ html+=`<div style="margin-top:8px;font-size:13px;font-weight:700;color:#1D4ED8;">❓ ${s.calc.ask}</div>`; }
+    html+=`</div>`;
+  }
 
   html+=`<div class="interaction-layout">`;
 
@@ -2208,9 +2771,53 @@ function showChallenge(s){
   document.getElementById('challenge-overlay').classList.add('show');
 }
 
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, function(ch) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+  });
+}
+
+function recordAnswer(spot, choice, wasCorrect) {
+  var stage = gameData[currentStageIdx];
+  var correct = currentChallengeChoices.find(function(c) { return c.isCorrect; }) || { text: spot.choices[spot.goodIdx] };
+  var key = stage.name + '|' + spot.label;
+  var existing = answerHistory.find(function(item) { return item.key === key; });
+  var row = {
+    key: key,
+    stage: stage.name,
+    device: spot.label,
+    question: spot.situation,
+    userAnswer: choice.text,
+    correctAnswer: correct.text,
+    wasCorrect: wasCorrect
+  };
+  if (existing) {
+    Object.assign(existing, row);
+  } else {
+    answerHistory.push(row);
+  }
+}
+
+function buildAnswerReview() {
+  if (!answerHistory.length) {
+    return '<div class="review-item"><div class="review-question">No questions were answered yet.</div></div>';
+  }
+  return answerHistory.map(function(item, idx) {
+    var resultClass = item.wasCorrect ? 'good' : 'bad';
+    var resultText = item.wasCorrect ? 'Correct' : 'Needs review';
+    return '<div class="review-item">' +
+      '<div class="review-stage">' + escapeHtml(item.stage) + ' - ' + escapeHtml(item.device) + '</div>' +
+      '<div class="review-question">' + (idx + 1) + '. ' + escapeHtml(item.question) + '</div>' +
+      '<div class="review-answer ' + resultClass + '">Your answer: <strong>' + escapeHtml(item.userAnswer) + '</strong> (' + resultText + ')</div>' +
+      '<div class="review-answer good">Correct answer: <strong>' + escapeHtml(item.correctAnswer) + '</strong></div>' +
+    '</div>';
+  }).join('');
+}
+
 function resolve(idx){
   var s = activeSpot, good = currentChallengeChoices[idx].isCorrect, html = '<div class="sheet-handle"></div>';
   sfx.click();
+  recordAnswer(s, currentChallengeChoices[idx], good);
   if(good){
     sfx.success();
     s.fixed = true; stageFixedCount++; totalSavings+=s.savings; totalScore+=s.pts;
@@ -2275,7 +2882,7 @@ function resolve(idx){
 }
 
 function retry(){ showChallenge(activeSpot); }
-function cont(){ gstate='playing'; activeSpot=null; activePet=null; document.getElementById('challenge-overlay').classList.remove('show'); keys = {w:0, a:0, s:0, d:0, ArrowUp:0, ArrowDown:0, ArrowLeft:0, ArrowRight:0}; }
+function cont(){ gstate='playing'; activeSpot=null; activePet=null; furnitureActivity=null; document.getElementById('challenge-overlay').classList.remove('show'); keys = {w:0, a:0, s:0, d:0, ArrowUp:0, ArrowDown:0, ArrowLeft:0, ArrowRight:0}; }
 
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function resizeCanvas(){ var wrap=document.getElementById('canvas-wrap'); W=wrap.clientWidth; H=wrap.clientHeight; cv.width=W; cv.height=H; T=Math.floor(Math.min(W/COLS, H/ROWS)); }
@@ -2283,6 +2890,7 @@ window.addEventListener('resize', () => { if(document.getElementById('gamescreen
 
 function initStage() {
   stageFixedCount = 0; 
+  furnitureActivity = null;
   player.x = gameData[currentStageIdx].startX; 
   player.y = gameData[currentStageIdx].startY;
   
@@ -2319,7 +2927,7 @@ function initStage() {
 
 function startGame() { 
   initAudio(); sfx.pop();
-  currentStageIdx = 0; totalScore = 0; totalSavings = 0; lostPetEmojis = [];
+  currentStageIdx = 0; totalScore = 0; totalSavings = 0; lostPetEmojis = []; answerHistory = [];
   
   stagesWithKid = [0]; 
   while(stagesWithKid.length < 3) {
@@ -2367,7 +2975,9 @@ function showAdoptions() {
 function showWin() { 
   gstate='paused'; sfx.win();
   document.getElementById('ws-save').textContent = 'RM '+totalSavings+'/month'; 
-  document.getElementById('ws-score').textContent = totalScore+' pts'; showScreen('winscreen'); 
+  document.getElementById('ws-score').textContent = totalScore+' pts';
+  document.getElementById('answer-review').innerHTML = buildAnswerReview();
+  showScreen('winscreen'); 
 }
 
 // JOYSTICK & KEYS

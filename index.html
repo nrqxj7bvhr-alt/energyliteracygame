@@ -54,10 +54,13 @@
   .player-input { width: 100%; border: 2px solid var(--border); border-radius: 12px; padding: 13px 14px; font-size: 16px; font-weight: 700; color: var(--text); outline: none; }
   .player-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(29,158,117,0.12); }
   .name-error { min-height: 18px; padding-top: 5px; font-size: 12px; color: var(--darkred); font-weight: 700; }
-  .leaderboard-box { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 16px; text-align: left; }
+  .leaderboard-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .leaderboard-box { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 12px; text-align: left; min-width: 0; }
   .leaderboard-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
   .leaderboard-list { display: flex; flex-direction: column; gap: 6px; }
+  .leaderboard-list.full-score-list { max-height: 230px; overflow-y: auto; padding-right: 2px; }
   .leaderboard-row { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; background: rgba(255,255,255,0.78); border-radius: 10px; padding: 7px 9px; font-size: 13px; }
+  .leaderboard-row.full-score-row { grid-template-columns: 34px 1fr auto; }
   .leaderboard-rank { color: var(--blue); font-weight: 900; }
   .leaderboard-name { color: var(--text); font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .leaderboard-score { color: var(--darkgreen); font-weight: 900; }
@@ -158,7 +161,7 @@
   .review-answer.good strong { color: var(--darkgreen); }
   .review-answer.bad strong { color: var(--darkred); }
 
-  @media (max-width: 760px) { .tutorial-grid { grid-template-columns: 1fr; } .tutorial-step { min-height: auto; } .guide-list { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .tutorial-grid { grid-template-columns: 1fr; } .tutorial-step { min-height: auto; } .guide-list, .leaderboard-pair { grid-template-columns: 1fr; } }
 
   @media (max-width: 650px), (max-height: 520px) {
     #gamescreen { flex-direction: column; background: var(--bg); }
@@ -231,10 +234,17 @@
       </div>
     </div>
 
-    <div class="leaderboard-box">
-      <div class="leaderboard-title">Top 10 Leaderboard</div>
-      <div class="leaderboard-list" id="leaderboard-list"></div>
-      <div class="leaderboard-note" id="leaderboard-status">Connecting to online leaderboard...</div>
+    <div class="leaderboard-pair">
+      <div class="leaderboard-box">
+        <div class="leaderboard-title">Top 10 Leaderboard</div>
+        <div class="leaderboard-list" id="leaderboard-list"></div>
+        <div class="leaderboard-note" id="leaderboard-status">Connecting to online leaderboard...</div>
+      </div>
+      <div class="leaderboard-box">
+        <div class="leaderboard-title">First 10 Full Score</div>
+        <div class="leaderboard-list full-score-list" id="fullscore-list"></div>
+        <div class="leaderboard-note" id="fullscore-note"></div>
+      </div>
     </div>
 
     <button class="btn" onclick="startGame()">Start Campaign</button>
@@ -287,10 +297,17 @@
       <div class="how-item">Final Score: <strong style="color:var(--blue); font-size:18px;" id="ws-score"></strong></div>
       <div class="how-item" id="leaderboard-result" style="font-weight:800;"></div>
     </div>
-    <div class="leaderboard-box">
-      <div class="leaderboard-title">Final Leaderboard</div>
-      <div class="leaderboard-list" id="win-leaderboard-list"></div>
-      <div class="leaderboard-note" id="win-leaderboard-status"></div>
+    <div class="leaderboard-pair">
+      <div class="leaderboard-box">
+        <div class="leaderboard-title">Top 10 Leaderboard</div>
+        <div class="leaderboard-list" id="win-leaderboard-list"></div>
+        <div class="leaderboard-note" id="win-leaderboard-status"></div>
+      </div>
+      <div class="leaderboard-box">
+        <div class="leaderboard-title">First 10 Full Score</div>
+        <div class="leaderboard-list full-score-list" id="win-fullscore-list"></div>
+        <div class="leaderboard-note" id="win-fullscore-note"></div>
+      </div>
     </div>
     <div class="title" style="font-size:18px; margin-top:4px;">Answer Review</div>
     <div class="sub" style="margin-bottom:10px;">Check each question, your answer, and the correct answer.</div>
@@ -608,10 +625,12 @@ var totalSavings = 0;
 var lostPetEmojis = []; 
 var playerName = "";
 var leaderboard = [];
+var fullScoreLeaderboard = [];
 var leaderboardFileLoaded = false;
 var leaderboardSource = "local";
 var leaderboardStatusText = "Saved on this device";
 var LEADERBOARD_KEY = "energyDetectiveTop10Leaderboard";
+var FULL_SCORE_LEADERBOARD_KEY = "energyDetectiveFullScoreLeaderboard";
 var LAST_PLAYER_KEY = "energyDetectiveLastPlayerName";
 var FIREBASE_LEADERBOARD_CONFIG = {
   apiKey: "AIzaSyBV3r1ltnDibWF6LXuDVKK1RZ3lbyD2s84",
@@ -4227,6 +4246,26 @@ function normalizePlayerName(value) {
   return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 18);
 }
 
+function getFullScoreTarget() {
+  var devicePts = 0;
+  gameData.forEach(function(stage) {
+    (stage.spots || []).forEach(function(spot) {
+      devicePts += Math.max(0, Math.floor(Number(spot.pts) || 0));
+    });
+  });
+  
+  // Calculate points for all 5 NPCs instead of just the top 3
+  var npcPts = gameData.reduce(function(sum, stage) {
+    return sum + Math.max(0, Math.floor(Number(stage.npc && stage.npc.pts) || 0));
+  }, 0);
+  
+  return devicePts + npcPts;
+}
+
+function isFullScoreValue(score) {
+  return Math.max(0, Math.floor(Number(score) || 0)) >= getFullScoreTarget();
+}
+
 function readStoredLeaderboard() {
   try {
     var parsed = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
@@ -4240,14 +4279,39 @@ function writeStoredLeaderboard(rows) {
   try { localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(rows.slice(0, 10))); } catch (e) {}
 }
 
-function sanitizeLeaderboardRows(rows) {
+function readStoredFullScoreLeaderboard() {
+  try {
+    var parsed = JSON.parse(localStorage.getItem(FULL_SCORE_LEADERBOARD_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeStoredFullScoreLeaderboard(rows) {
+  try { localStorage.setItem(FULL_SCORE_LEADERBOARD_KEY, JSON.stringify(rows.slice(0, 10))); } catch (e) {}
+}
+
+function buildFullScoreNameMap(rows) {
+  var map = {};
+  (Array.isArray(rows) ? rows : []).forEach(function(row) {
+    var name = normalizePlayerName(row && row.name);
+    if (name) map[playerNameKey(name)] = true;
+  });
+  return map;
+}
+
+function sanitizeLeaderboardRows(rows, options) {
+  options = options || {};
   var byName = {};
+  var fullScoreNames = options.fullScoreNames || {};
   (Array.isArray(rows) ? rows : []).forEach(function(row) {
     var name = normalizePlayerName(row && row.name);
     var score = Number(row && row.score);
     if (!name || !Number.isFinite(score)) return;
     score = Math.max(0, Math.floor(score));
-    var key = name.toLowerCase();
+    var nameKey = playerNameKey(name);
+    if ((options.excludeFullScore && isFullScoreValue(score)) || fullScoreNames[nameKey]) return;
     var cleaned = {
       name: name,
       score: score,
@@ -4255,11 +4319,38 @@ function sanitizeLeaderboardRows(rows) {
       date: row.date || '',
       updatedAt: Math.max(0, Math.floor(Number(row.updatedAt) || 0))
     };
-    if (!byName[key] || cleaned.score > byName[key].score) byName[key] = cleaned;
+    if (!byName[nameKey] || cleaned.score > byName[nameKey].score) byName[nameKey] = cleaned;
   });
   return Object.keys(byName).map(function(key) { return byName[key]; })
     .sort(function(a, b) { return (b.score - a.score) || (b.savings - a.savings) || a.name.localeCompare(b.name); })
+    .slice(0, options.limit || 10);
+}
+
+function sanitizeFullScoreRows(rows) {
+  var byName = {};
+  (Array.isArray(rows) ? rows : []).forEach(function(row) {
+    var name = normalizePlayerName(row && row.name);
+    var score = Math.max(0, Math.floor(Number(row && row.score) || 0));
+    if (!name || !isFullScoreValue(score)) return;
+    var nameKey = playerNameKey(name);
+    var completedAt = Math.max(0, Math.floor(Number(row.completedAt || row.fullScoreAt || row.updatedAt) || 0));
+    var cleaned = {
+      name: name,
+      score: score,
+      savings: Math.max(0, Math.floor(Number(row.savings) || 0)),
+      completedAt: completedAt,
+      date: row.date || '',
+      key: nameKey
+    };
+    if (!byName[nameKey] || cleaned.completedAt < byName[nameKey].completedAt) byName[nameKey] = cleaned;
+  });
+  return Object.keys(byName).map(function(key) { return byName[key]; })
+    .sort(function(a, b) { return (a.completedAt - b.completedAt) || a.name.localeCompare(b.name); })
     .slice(0, 10);
+}
+
+function isNameOnFullScoreBoard(name) {
+  return !!buildFullScoreNameMap(fullScoreLeaderboard)[playerNameKey(name)];
 }
 
 function setLeaderboardStatus(text, source) {
@@ -4272,9 +4363,20 @@ function setLeaderboardStatus(text, source) {
 }
 
 function setLeaderboardRows(rows, source) {
-  leaderboard = sanitizeLeaderboardRows(rows);
+  leaderboard = sanitizeLeaderboardRows(rows, {
+    excludeFullScore: true,
+    fullScoreNames: buildFullScoreNameMap(fullScoreLeaderboard),
+    limit: 10
+  });
   writeStoredLeaderboard(leaderboard);
-  if (source === 'firebase') setLeaderboardStatus('Online leaderboard: synced across devices.', 'firebase');
+  if (source === 'firebase') setLeaderboardStatus('Online leaderboards: synced across devices.', 'firebase');
+  renderLeaderboard();
+}
+
+function setFullScoreRows(rows, source) {
+  fullScoreLeaderboard = sanitizeFullScoreRows(rows);
+  writeStoredFullScoreLeaderboard(fullScoreLeaderboard);
+  if (source === 'firebase') setLeaderboardStatus('Online leaderboards: synced across devices.', 'firebase');
   renderLeaderboard();
 }
 
@@ -4290,7 +4392,7 @@ function initFirebaseLeaderboard() {
   if (firebaseLeaderboardDb) return Promise.resolve(firebaseLeaderboardDb);
   if (!window.firebase || !firebase.initializeApp || !firebase.database) {
     firebaseLeaderboardAvailable = false;
-    setLeaderboardStatus('Local leaderboard: Firebase SDK is not loaded yet.', 'local');
+    setLeaderboardStatus('Local leaderboards: Firebase SDK is not loaded yet.', 'local');
     return Promise.resolve(null);
   }
   try {
@@ -4304,27 +4406,50 @@ function initFirebaseLeaderboard() {
     return Promise.resolve(firebaseLeaderboardDb);
   } catch (e) {
     firebaseLeaderboardAvailable = false;
-    setLeaderboardStatus('Local leaderboard: Firebase could not connect.', 'local');
+    setLeaderboardStatus('Local leaderboards: Firebase could not connect.', 'local');
     return Promise.resolve(null);
   }
 }
 
-function readFirebaseLeaderboard() {
+function readFirebaseFullScoreLeaderboard() {
   return initFirebaseLeaderboard().then(function(db) {
     if (!db) return null;
-    return db.ref('leaderboard').orderByChild('score').limitToLast(10).once('value')
+    return db.ref('fullScoreLeaderboard').orderByChild('completedAt').limitToFirst(10).once('value')
       .then(function(snapshot) {
         var rows = [];
         snapshot.forEach(function(child) {
           var value = child.val() || {};
           rows.push(value);
         });
-        rows = sanitizeLeaderboardRows(rows).reverse();
-        return sanitizeLeaderboardRows(rows);
+        return sanitizeFullScoreRows(rows);
       })
       .catch(function() {
         firebaseLeaderboardAvailable = false;
-        setLeaderboardStatus('Local leaderboard: Firebase read failed.', 'local');
+        setLeaderboardStatus('Local leaderboards: Firebase full-score read failed.', 'local');
+        return null;
+      });
+  });
+}
+
+function readFirebaseLeaderboard() {
+  return initFirebaseLeaderboard().then(function(db) {
+    if (!db) return null;
+    return db.ref('leaderboard').orderByChild('score').limitToLast(120).once('value')
+      .then(function(snapshot) {
+        var rows = [];
+        snapshot.forEach(function(child) {
+          var value = child.val() || {};
+          rows.push(value);
+        });
+        return sanitizeLeaderboardRows(rows, {
+          excludeFullScore: true,
+          fullScoreNames: buildFullScoreNameMap(fullScoreLeaderboard),
+          limit: 10
+        });
+      })
+      .catch(function() {
+        firebaseLeaderboardAvailable = false;
+        setLeaderboardStatus('Local leaderboards: Firebase read failed.', 'local');
         return null;
       });
   });
@@ -4339,6 +4464,7 @@ function saveFirebaseScore(name, score, savings) {
       savings: Math.max(0, Math.floor(Number(savings) || 0)),
       updatedAt: Date.now()
     };
+    if (isFullScoreValue(payload.score) || isNameOnFullScoreBoard(payload.name)) return false;
     var ref = db.ref('leaderboard/' + playerNameKey(payload.name));
     var authReady = firebaseLeaderboardAuthPromise || Promise.resolve(null);
     return authReady.then(function() {
@@ -4350,23 +4476,98 @@ function saveFirebaseScore(name, score, savings) {
       return !!(result && result.committed);
     }).catch(function() {
       firebaseLeaderboardAvailable = false;
-      setLeaderboardStatus('Local leaderboard: Firebase save failed.', 'local');
+      setLeaderboardStatus('Local leaderboards: Firebase save failed.', 'local');
       return false;
     });
   });
 }
 
+function removeFirebaseScore(name) {
+  return initFirebaseLeaderboard().then(function(db) {
+    if (!db) return false;
+    return db.ref('leaderboard/' + playerNameKey(name)).remove().then(function() { return true; }).catch(function() { return false; });
+  });
+}
+
+function saveFirebaseFullScore(name, score, savings) {
+  return initFirebaseLeaderboard().then(function(db) {
+    if (!db) return { committed: false, offline: true };
+    var payload = {
+      name: normalizePlayerName(name),
+      score: Math.max(0, Math.floor(Number(score) || 0)),
+      savings: Math.max(0, Math.floor(Number(savings) || 0)),
+      completedAt: Date.now(),
+      date: new Date().toISOString().slice(0, 10)
+    };
+    if (!isFullScoreValue(payload.score)) return { committed: false, notFullScore: true };
+    var nameKey = playerNameKey(payload.name);
+    return readFirebaseFullScoreLeaderboard().then(function(rows) {
+      rows = rows || [];
+      var already = rows.some(function(row) { return playerNameKey(row.name) === nameKey; });
+      if (already) return { committed: false, already: true };
+      if (rows.length >= 10) return { committed: false, boardFull: true };
+      var ref = db.ref('fullScoreLeaderboard/' + nameKey);
+      var authReady = firebaseLeaderboardAuthPromise || Promise.resolve(null);
+      return authReady.then(function() {
+        return ref.transaction(function(current) {
+          if (current) return;
+          return payload;
+        });
+      }).then(function(result) {
+        return { committed: !!(result && result.committed), already: !!(result && !result.committed) };
+      });
+    }).catch(function() {
+      firebaseLeaderboardAvailable = false;
+      setLeaderboardStatus('Local leaderboards: Firebase full-score save failed.', 'local');
+      return { committed: false, offline: true };
+    });
+  });
+}
+
+function addLocalFullScoreRow(payload) {
+  var nameKey = playerNameKey(payload.name);
+  var rows = sanitizeFullScoreRows(fullScoreLeaderboard.concat(readStoredFullScoreLeaderboard()));
+  var already = rows.some(function(row) { return playerNameKey(row.name) === nameKey; });
+  if (already) {
+    setFullScoreRows(rows, leaderboardSource);
+    return { added: false, already: true };
+  }
+  if (rows.length >= 10) {
+    setFullScoreRows(rows, leaderboardSource);
+    return { added: false, boardFull: true };
+  }
+  rows.push(payload);
+  setFullScoreRows(rows, leaderboardSource);
+  return { added: true };
+}
+
+function removeNameFromNormalLeaderboard(name) {
+  var nameKey = playerNameKey(name);
+  var rows = leaderboard.concat(readStoredLeaderboard()).filter(function(row) {
+    return playerNameKey(row && row.name) !== nameKey;
+  });
+  setLeaderboardRows(rows, leaderboardSource);
+}
+
 function loadLeaderboardData(forceFileRead) {
-  leaderboard = sanitizeLeaderboardRows(readStoredLeaderboard());
+  fullScoreLeaderboard = sanitizeFullScoreRows(readStoredFullScoreLeaderboard());
+  leaderboard = sanitizeLeaderboardRows(readStoredLeaderboard(), {
+    excludeFullScore: true,
+    fullScoreNames: buildFullScoreNameMap(fullScoreLeaderboard),
+    limit: 10
+  });
   renderLeaderboard();
-  setLeaderboardStatus('Connecting to online leaderboard...', 'local');
-  readFirebaseLeaderboard().then(function(rows) {
+  setLeaderboardStatus('Connecting to online leaderboards...', 'local');
+  readFirebaseFullScoreLeaderboard().then(function(fullRows) {
+    if (fullRows) setFullScoreRows(fullRows, 'firebase');
+    return readFirebaseLeaderboard();
+  }).then(function(rows) {
     if (rows) {
       setLeaderboardRows(rows, 'firebase');
       return;
     }
     if ((!forceFileRead && leaderboardFileLoaded) || !(location.protocol === 'http:' || location.protocol === 'https:')) {
-      setLeaderboardStatus('Local leaderboard: saved only on this device.', 'local');
+      setLeaderboardStatus('Local leaderboards: saved only on this device.', 'local');
       return;
     }
     leaderboardFileLoaded = true;
@@ -4374,19 +4575,33 @@ function loadLeaderboardData(forceFileRead) {
       .then(function(res) { return res.ok ? res.json() : []; })
       .then(function(fileRows) {
         setLeaderboardRows([].concat(fileRows || [], readStoredLeaderboard()), 'local');
-        setLeaderboardStatus('Local leaderboard: saved only on this device.', 'local');
+        setLeaderboardStatus('Local leaderboards: saved only on this device.', 'local');
       })
-      .catch(function() { setLeaderboardStatus('Local leaderboard: saved only on this device.', 'local'); renderLeaderboard(); });
+      .catch(function() { setLeaderboardStatus('Local leaderboards: saved only on this device.', 'local'); renderLeaderboard(); });
   });
 }
 
 function renderLeaderboard() {
-  var html = leaderboard.length ? leaderboard.map(function(row, idx) {
+  var normalHtml = leaderboard.length ? leaderboard.map(function(row, idx) {
     return '<div class="leaderboard-row"><div class="leaderboard-rank">#' + (idx + 1) + '</div><div class="leaderboard-name">' + escapeHtml(row.name) + '</div><div class="leaderboard-score">' + row.score + '</div></div>';
-  }).join('') : '<div class="leaderboard-empty">No scores yet. Be the first name on the board.</div>';
+  }).join('') : '<div class="leaderboard-empty">No regular scores yet. Full scores move to the special board.</div>';
   ['leaderboard-list', 'win-leaderboard-list'].forEach(function(id) {
     var el = document.getElementById(id);
-    if (el) el.innerHTML = html;
+    if (el) el.innerHTML = normalHtml;
+  });
+
+  var fullHtml = fullScoreLeaderboard.length ? fullScoreLeaderboard.map(function(row, idx) {
+    return '<div class="leaderboard-row full-score-row"><div class="leaderboard-rank">#' + (idx + 1) + '</div><div class="leaderboard-name">' + escapeHtml(row.name) + '</div><div class="leaderboard-score">' + row.score + '</div></div>';
+  }).join('') : '<div class="leaderboard-empty">No full-score finishers yet.</div>';
+  ['fullscore-list', 'win-fullscore-list'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = fullHtml;
+  });
+
+  var fullNote = 'Full score: ' + getFullScoreTarget() + ' pts. Earliest 10 players only.';
+  ['fullscore-note', 'win-fullscore-note'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = fullNote;
   });
   setLeaderboardStatus(leaderboardStatusText, leaderboardSource);
 }
@@ -4409,24 +4624,62 @@ function capturePlayerName() {
 
 function updateLeaderboardScore() {
   var name = normalizePlayerName(playerName) || 'Player';
-  var key = name.toLowerCase();
-  var rows = sanitizeLeaderboardRows(leaderboard.concat(readStoredLeaderboard()));
-  var existing = rows.find(function(row) { return row.name.toLowerCase() === key; });
+  var key = playerNameKey(name);
+  var scorePayload = { name: name, score: totalScore, savings: totalSavings, date: new Date().toISOString().slice(0, 10), updatedAt: Date.now(), completedAt: Date.now() };
+
+  if (isFullScoreValue(totalScore)) {
+    var localResult = addLocalFullScoreRow(scorePayload);
+    removeNameFromNormalLeaderboard(name);
+    saveFirebaseFullScore(name, totalScore, totalSavings).then(function(result) {
+      return removeFirebaseScore(name).then(function() {
+        return readFirebaseFullScoreLeaderboard().then(function(fullRows) {
+          if (fullRows) setFullScoreRows(fullRows, 'firebase');
+          return readFirebaseLeaderboard();
+        }).then(function(rows) {
+          if (rows) setLeaderboardRows(rows, 'firebase');
+          var msg = document.getElementById('leaderboard-result');
+          var rank = fullScoreLeaderboard.findIndex(function(row) { return playerNameKey(row.name) === key; }) + 1;
+          if (!msg) return;
+          if (result && result.committed && rank > 0) msg.textContent = 'Full score saved! Position #' + rank + ' on the First 10 board.';
+          else if (result && result.already && rank > 0) msg.textContent = 'Already on the First 10 full-score board at #' + rank + '.';
+          else if (result && result.boardFull) msg.textContent = 'Full score reached, but the First 10 board is already full.';
+          else if (rank > 0) msg.textContent = 'Full score saved locally at position #' + rank + '.';
+        });
+      });
+    });
+    var localRank = fullScoreLeaderboard.findIndex(function(row) { return playerNameKey(row.name) === key; }) + 1;
+    if (firebaseLeaderboardAvailable) return 'Full score! Saving to First 10 board...';
+    if (localResult.boardFull) return 'Full score reached, but the First 10 board is already full.';
+    return localRank > 0 ? 'Full score! Position #' + localRank + ' on the First 10 board.' : 'Full score reached!';
+  }
+
+  if (isNameOnFullScoreBoard(name)) {
+    removeNameFromNormalLeaderboard(name);
+    readFirebaseLeaderboard().then(function(rows) { if (rows) setLeaderboardRows(rows, 'firebase'); });
+    return name + ' is already on the full-score board.';
+  }
+
+  var rows = sanitizeLeaderboardRows(leaderboard.concat(readStoredLeaderboard()), {
+    excludeFullScore: true,
+    fullScoreNames: buildFullScoreNameMap(fullScoreLeaderboard),
+    limit: 10
+  });
+  var existing = rows.find(function(row) { return playerNameKey(row.name) === key; });
   var isNewHigh = !existing || totalScore > existing.score;
   if (isNewHigh) {
-    rows = rows.filter(function(row) { return row.name.toLowerCase() !== key; });
-    rows.push({ name: name, score: totalScore, savings: totalSavings, date: new Date().toISOString().slice(0, 10), updatedAt: Date.now() });
+    rows = rows.filter(function(row) { return playerNameKey(row.name) !== key; });
+    rows.push(scorePayload);
     setLeaderboardRows(rows, leaderboardSource);
     saveFirebaseScore(name, totalScore, totalSavings).then(function(committed) {
       return readFirebaseLeaderboard().then(function(onlineRows) {
         if (onlineRows) setLeaderboardRows(onlineRows, 'firebase');
         var msg = document.getElementById('leaderboard-result');
-        var rank = leaderboard.findIndex(function(row) { return row.name.toLowerCase() === key; }) + 1;
+        var rank = leaderboard.findIndex(function(row) { return playerNameKey(row.name) === key; }) + 1;
         if (msg && committed) msg.textContent = rank > 0 ? 'New online high score! Rank #' + rank + '.' : 'New online high score saved.';
         if (msg && !committed && onlineRows) msg.textContent = 'Best online score for ' + name + ' is already higher.';
       });
     });
-    var rank = leaderboard.findIndex(function(row) { return row.name.toLowerCase() === key; }) + 1;
+    var rank = leaderboard.findIndex(function(row) { return playerNameKey(row.name) === key; }) + 1;
     return firebaseLeaderboardAvailable ? 'Saving online high score...' : (rank > 0 ? 'New local high score! Rank #' + rank + '.' : 'New local high score saved.');
   }
   setLeaderboardRows(rows, leaderboardSource);

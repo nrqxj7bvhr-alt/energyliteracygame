@@ -28,6 +28,18 @@
   .how-box { background: var(--bg); border-radius: 12px; padding: 14px 16px; text-align: left; margin-bottom: 20px; }
   .how-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
   .how-item { font-size: 13px; color: var(--muted); padding: 3px 0; line-height: 1.5; }
+  .guide-panel { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; text-align: left; margin-bottom: 16px; }
+  .guide-title { font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+  .guide-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .guide-item { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: center; background: rgba(255,255,255,0.86); border: 1px solid rgba(224,222,216,0.95); border-radius: 12px; padding: 10px; }
+  .guide-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.55); }
+  .guide-icon.move { background: #E7F0FF; }
+  .guide-icon.fix { background: #FFF0D9; }
+  .guide-icon.cat { background: #FCE8DD; }
+  .guide-icon.exit { background: #E5F7EF; }
+  .guide-copy-title { font-size: 13px; font-weight: 900; color: var(--text); margin-bottom: 2px; }
+  .guide-copy-text { font-size: 12px; line-height: 1.45; color: var(--muted); }
+  .keycap { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 7px; background: #151827; color: #fff; font-size: 12px; font-weight: 900; }
   .player-box { background: #fff; border: 2px solid var(--border); border-radius: 14px; padding: 12px; text-align: left; margin-bottom: 14px; }
   .player-label { display: block; font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
   .player-input { width: 100%; border: 2px solid var(--border); border-radius: 12px; padding: 13px 14px; font-size: 16px; font-weight: 700; color: var(--text); outline: none; }
@@ -137,7 +149,7 @@
   .review-answer.good strong { color: var(--darkgreen); }
   .review-answer.bad strong { color: var(--darkred); }
 
-  @media (max-width: 760px) { .tutorial-grid { grid-template-columns: 1fr; } .tutorial-step { min-height: auto; } }
+  @media (max-width: 760px) { .tutorial-grid { grid-template-columns: 1fr; } .tutorial-step { min-height: auto; } .guide-list { grid-template-columns: 1fr; } }
 
   @media (max-width: 650px), (max-height: 520px) {
     #gamescreen { flex-direction: column; background: var(--bg); }
@@ -176,12 +188,38 @@
       <div class="name-error" id="name-error"></div>
     </div>
 
-    <div class="how-box">
-      <div class="how-title">How to play</div>
-      <div class="how-item">🕹️ Move with the joystick or WASD.</div>
-      <div class="how-item">⚠️ <b>Fix a device:</b> walk near a warning device, tap <b>E</b>, then choose the best answer.</div>
-      <div class="how-item">🐈 <b>Interact with the cat:</b> walk near it and tap <b>E</b>. You can pet it or leave it alone.</div>
-      <div class="how-item">🚪 <b>Get out:</b> finish all 5 devices, then walk through the open exit door on the outside wall.</div>
+    <div class="guide-panel">
+      <div class="guide-title">How to play</div>
+      <div class="guide-list">
+        <div class="guide-item">
+          <div class="guide-icon move">🕹️</div>
+          <div>
+            <div class="guide-copy-title">Move</div>
+            <div class="guide-copy-text">Use the joystick or <span class="keycap">WASD</span>.</div>
+          </div>
+        </div>
+        <div class="guide-item">
+          <div class="guide-icon fix">⚠️</div>
+          <div>
+            <div class="guide-copy-title">Fix a device</div>
+            <div class="guide-copy-text">Stand near a warning device, tap <span class="keycap">E</span>, then choose the best answer.</div>
+          </div>
+        </div>
+        <div class="guide-item">
+          <div class="guide-icon cat">🐈</div>
+          <div>
+            <div class="guide-copy-title">Interact with the cat</div>
+            <div class="guide-copy-text">Walk near it and tap <span class="keycap">E</span>. Pet it or leave it alone.</div>
+          </div>
+        </div>
+        <div class="guide-item">
+          <div class="guide-icon exit">🚪</div>
+          <div>
+            <div class="guide-copy-title">Get out</div>
+            <div class="guide-copy-text">Finish all 5 devices, then walk through the open door on the outer wall.</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="leaderboard-box">

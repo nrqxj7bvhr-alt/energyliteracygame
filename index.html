@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>Energy Detective - 5 Stage Campaign</title>
+<title>Energy Detective - Soul Knight Style</title>
 <style>
   :root {
     --green: #1D9E75; --darkgreen: #0F6E56; --red: #E24B4A; --darkred: #A32D2D;
@@ -32,27 +32,28 @@
   .btn:active { transform: scale(0.98); }
 
   /* GAME SCREEN */
-  #gamescreen { flex-direction: column; overflow: hidden; position: relative; }
-  #hud { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; padding: 8px 8px 4px; background: #fff; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .hc { background: var(--bg); border-radius: 8px; padding: 5px 6px; text-align: center; }
-  .hl { font-size: 9px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
-  .hv { font-size: 13px; font-weight: 700; color: var(--text); }
-  .hv.g { color: var(--darkgreen); } .hv.b { color: var(--blue); }
-  #canvas-wrap { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+  #gamescreen { flex-direction: column; overflow: hidden; position: relative; background: #070914; }
+  #hud { position: absolute; z-index: 30; top: max(10px, env(safe-area-inset-top)); left: 10px; display: grid; grid-template-columns: repeat(4, minmax(62px, 1fr)); gap: 5px; width: min(470px, calc(100% - 76px)); padding: 6px; background: rgba(8, 10, 22, 0.72); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,0.35); backdrop-filter: blur(8px); }
+  .hc { background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.13); border-radius: 6px; padding: 5px 6px; text-align: center; }
+  .hl { font-size: 9px; color: rgba(255,255,255,0.68); font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+  .hv { font-size: 13px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.45); }
+  .hv.g { color: #56E39A; } .hv.b { color: #80C7FF; }
+  #canvas-wrap { position: absolute; inset: 0; overflow: hidden; min-height: 0; background: #070914; }
   #cv { display: block; width: 100%; height: 100%; }
-  #msgbar { background: rgba(0,0,0,0.8); color: #fff; font-size: 12px; text-align: center; padding: 7px 12px; flex-shrink: 0; min-height: 34px; line-height: 1.4; transition: background 0.3s; }
-  #msgbar.highlight { background: var(--amber); font-weight: bold; }
-  #msgbar.danger { background: var(--red); font-weight: bold; }
+  #msgbar { position: absolute; z-index: 35; left: 50%; bottom: max(190px, calc(env(safe-area-inset-bottom) + 180px)); transform: translateX(-50%); width: min(620px, calc(100% - 180px)); background: rgba(8,10,22,0.74); color: #fff; border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; font-size: 12px; text-align: center; padding: 8px 14px; min-height: 34px; line-height: 1.4; transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; box-shadow: 0 8px 28px rgba(0,0,0,0.35); backdrop-filter: blur(8px); pointer-events: none; }
+  #msgbar.highlight { background: rgba(239,159,39,0.88); border-color: rgba(255,255,255,0.35); font-weight: bold; box-shadow: 0 0 24px rgba(239,159,39,0.32); }
+  #msgbar.danger { background: rgba(226,75,74,0.9); border-color: rgba(255,255,255,0.35); font-weight: bold; box-shadow: 0 0 24px rgba(226,75,74,0.34); }
 
   /* AUDIO TOGGLE */
-  #audio-toggle { position: absolute; top: 76px; right: 10px; background: rgba(255,255,255,0.9); border: 2px solid var(--border); border-radius: 50%; width: 38px; height: 38px; font-size: 18px; cursor: pointer; z-index: 50; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+  #audio-toggle { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 10px; background: rgba(8,10,22,0.72); color: #fff; border: 1px solid rgba(255,255,255,0.22); border-radius: 50%; width: 42px; height: 42px; font-size: 18px; cursor: pointer; z-index: 50; box-shadow: 0 8px 28px rgba(0,0,0,0.35); backdrop-filter: blur(8px); }
 
   /* CONTROLS */
-  #controls { display: flex; justify-content: space-between; align-items: center; padding: 12px 30px; background: #fff; border-top: 1px solid var(--border); padding-bottom: max(12px, env(safe-area-inset-bottom)); flex-shrink: 0; touch-action: none; }
-  #joy-zone { width: 90px; height: 90px; border-radius: 50%; background: var(--bg); border: 2px solid var(--border); position: relative; display: flex; align-items: center; justify-content: center; }
-  #joy-stick { width: 44px; height: 44px; border-radius: 50%; background: var(--blue); box-shadow: 0 4px 10px rgba(0,0,0,0.2); position: absolute; transition: transform 0.05s linear; pointer-events: none; }
-  #btn-e { width: 76px; height: 76px; border-radius: 50%; background: #ccc; color: white; font-size: 26px; font-weight: 800; border: none; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.15); transition: 0.1s; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  #btn-e.active { background: var(--green); box-shadow: 0 4px 12px rgba(29, 158, 117, 0.4), inset 0 -4px 0 rgba(0,0,0,0.15); cursor: pointer; }
+  #controls { position: absolute; z-index: 40; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 clamp(64px, 9vw, 120px) max(54px, calc(env(safe-area-inset-bottom) + 44px)); background: transparent; border: 0; touch-action: none; pointer-events: none; }
+  #joy-zone { width: 132px; height: 132px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.18), rgba(255,255,255,0.06)); border: 2px solid rgba(255,255,255,0.28); position: relative; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 8px rgba(255,255,255,0.06), 0 10px 32px rgba(0,0,0,0.34); pointer-events: auto; backdrop-filter: blur(5px); }
+  #joy-zone:before { content: ""; width: 68px; height: 68px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.20); position: absolute; }
+  #joy-stick { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.38); border: 2px solid rgba(255,255,255,0.54); box-shadow: 0 7px 16px rgba(0,0,0,0.28), inset 0 2px 8px rgba(255,255,255,0.18); position: absolute; transition: transform 0.05s linear; pointer-events: none; }
+  #btn-e { width: 104px; height: 104px; border-radius: 50%; background: rgba(255,255,255,0.20); color: white; font-size: 28px; font-weight: 800; border: 2px solid rgba(255,255,255,0.26); box-shadow: inset 0 -5px 0 rgba(0,0,0,0.18), 0 10px 32px rgba(0,0,0,0.34); transition: 0.1s; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; backdrop-filter: blur(5px); opacity: 0.74; }
+  #btn-e.active { background: rgba(29,158,117,0.86); border-color: rgba(255,255,255,0.42); box-shadow: 0 0 0 8px rgba(29,158,117,0.14), 0 6px 20px rgba(29,158,117,0.36), inset 0 -5px 0 rgba(0,0,0,0.18); cursor: pointer; opacity: 1; }
   #btn-e.active:active { transform: scale(0.92); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15); }
   #btn-e-label { font-size: 11px; margin-top: -2px; font-weight: bold; opacity: 0.8;}
 
@@ -114,7 +115,24 @@
   .review-answer.good strong { color: var(--darkgreen); }
   .review-answer.bad strong { color: var(--darkred); }
 
-  @media (max-width: 650px) {
+  @media (max-width: 650px), (max-height: 520px) {
+    #gamescreen { flex-direction: column; background: var(--bg); }
+    #hud { position: relative; z-index: 30; top: auto; left: auto; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; width: auto; padding: 8px 8px 4px; background: #fff; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; box-shadow: none; backdrop-filter: none; flex-shrink: 0; }
+    .hc { background: var(--bg); border: 0; border-radius: 8px; padding: 5px 6px; }
+    .hl { color: var(--muted); font-weight: 600; }
+    .hv { color: var(--text); text-shadow: none; }
+    .hv.g { color: var(--darkgreen); } .hv.b { color: var(--blue); }
+    #canvas-wrap { position: relative; inset: auto; flex: 1; min-height: 0; background: #1a1a1a; }
+    #msgbar { position: relative; z-index: 35; left: auto; bottom: auto; transform: none; width: auto; background: rgba(0,0,0,0.8); color: #fff; border: 0; border-radius: 0; font-size: 12px; padding: 7px 12px; min-height: 34px; flex-shrink: 0; box-shadow: none; backdrop-filter: none; }
+    #msgbar.highlight { background: var(--amber); box-shadow: none; border: 0; }
+    #msgbar.danger { background: var(--red); box-shadow: none; border: 0; }
+    #audio-toggle { top: 76px; right: 10px; background: rgba(255,255,255,0.9); color: #111; border: 2px solid var(--border); width: 38px; height: 38px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); backdrop-filter: none; }
+    #controls { position: relative; z-index: 40; display: flex; justify-content: space-between; align-items: center; padding: 14px clamp(28px, 10vw, 48px); padding-bottom: max(18px, calc(env(safe-area-inset-bottom) + 8px)); background: #fff; border-top: 1px solid var(--border); flex-shrink: 0; pointer-events: auto; }
+    #joy-zone { width: 100px; height: 100px; background: var(--bg); border: 2px solid var(--border); box-shadow: none; backdrop-filter: none; }
+    #joy-zone:before { display: none; }
+    #joy-stick { width: 48px; height: 48px; background: var(--blue); border: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    #btn-e { width: 86px; height: 86px; background: #ccc; color: white; font-size: 26px; border: 0; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.15); opacity: 1; backdrop-filter: none; }
+    #btn-e.active { background: var(--green); box-shadow: 0 4px 12px rgba(29, 158, 117, 0.4), inset 0 -4px 0 rgba(0,0,0,0.15); }
     .interaction-layout { flex-direction: column; }
     .int-mid { height: 180px; width: 180px; margin: 0 auto; }
   }
@@ -131,6 +149,7 @@
       <div class="how-title">How to play</div>
       <div class="how-item">🕹️ Use Joystick or WASD to move</div>
       <div class="how-item">🔎 Find 5 energy problems per stage</div>
+      <div class="how-item">🚪 The exit door opens only after every device is finished</div>
       <div class="how-item">🧮 Each stage has only 1 simple calculation question</div>
       <div class="how-item">👆 Tap [E] near spots, furniture, or characters to interact</div>
       <div class="how-item">🧒 <b>Watch out for the Neighbor Kids!</b> Different kids show up each area — some are good (fix things) and some are sneaky (break things). Kick them out by pressing [E] near them.</div>
@@ -485,6 +504,8 @@ function setStageAudio(idx){
 var cv = document.getElementById('cv');
 var ctx = cv.getContext('2d');
 var W, H, T, animFrame;
+var camera = { x: 0, y: 0 };
+var compactMobile = false;
 var tick = 0, gstate = 'playing', activeSpot = null, activePet = null;
 
 // Global Progress
@@ -513,6 +534,9 @@ var activeNpc = null, currentNpcChoices = [];
 var answerHistory = [];
 var currentPets = []; 
 var currentDoors = []; 
+var stageExitDoor = null;
+var stageExitNoticeShown = false;
+var stageExitTransitioning = false;
 
 // Physics State
 var player = { x: 5, y: 5, radius: 0.35, moving: false, dirAngle: 0, faceDir: 1 };
@@ -2029,6 +2053,116 @@ function makeStageDoors(stageIdx) {
   });
 }
 
+
+function makeStageExitDoor(stageIdx) {
+  var exits = [
+    {x:11.0, y:22.65, w:4.0, h:1.35, orientation:'horizontal', wallY:23, label:'House Exit'},
+    {x:22.65, y:14.4, w:1.35, h:3.0, orientation:'vertical', wallX:23, label:'Garden Gate'},
+    {x:10.5, y:0.65, w:4.0, h:1.35, orientation:'horizontal', wallY:1, label:'Factory Lift'},
+    {x:2.5, y:22.65, w:4.0, h:1.35, orientation:'horizontal', wallY:23, label:'Office Exit'},
+    {x:22.65, y:18.2, w:1.35, h:3.2, orientation:'vertical', wallX:23, label:'Park Gate'}
+  ];
+  var src = exits[stageIdx] || exits[0];
+  return {
+    x: src.x, y: src.y, w: src.w, h: src.h,
+    orientation: src.orientation,
+    wallX: src.wallX, wallY: src.wallY,
+    label: src.label,
+    open: 0,
+    unlocked: false
+  };
+}
+
+function carveStageExitHole() {
+  if (!stageExitDoor) return;
+  var d = stageExitDoor;
+  if (d.orientation === 'horizontal') {
+    var wy = d.wallY != null ? d.wallY : Math.round(d.y + d.h / 2);
+    var x0 = Math.max(0, Math.floor(d.x));
+    var x1 = Math.min(COLS - 1, Math.ceil(d.x + d.w) - 1);
+    for (var x = x0; x <= x1; x++) delete wallSet[wk(x, wy)];
+  } else {
+    var wx = d.wallX != null ? d.wallX : Math.round(d.x + d.w / 2);
+    var y0 = Math.max(0, Math.floor(d.y));
+    var y1 = Math.min(ROWS - 1, Math.ceil(d.y + d.h) - 1);
+    for (var y = y0; y <= y1; y++) delete wallSet[wk(wx, y)];
+  }
+}
+
+function getStageObjectiveCount() {
+  return gameData[currentStageIdx].spots.length;
+}
+
+function isStageComplete() {
+  return stageFixedCount >= getStageObjectiveCount();
+}
+
+function setStageExitUnlocked(showNotice) {
+  if (!stageExitDoor || !isStageComplete()) return;
+  if (!stageExitDoor.unlocked) {
+    stageExitDoor.unlocked = true;
+    stageExitDoor.open = Math.max(stageExitDoor.open, 0.08);
+    sfx.doorOpen();
+  }
+  if (showNotice || !stageExitNoticeShown) {
+    setTempMsg('Exit door unlocked! Walk through the glowing door to proceed.', 360);
+    stageExitNoticeShown = true;
+  }
+}
+
+function syncStageExitDoor() {
+  if (!stageExitDoor) return;
+  if (isStageComplete()) {
+    setStageExitUnlocked(!stageExitNoticeShown);
+  } else if (stageExitDoor.unlocked) {
+    stageExitDoor.unlocked = false;
+    stageExitNoticeShown = false;
+    sfx.doorClose();
+  }
+  var target = stageExitDoor.unlocked ? 1 : 0;
+  stageExitDoor.open += (target - stageExitDoor.open) * 0.18;
+  if (Math.abs(target - stageExitDoor.open) < 0.01) stageExitDoor.open = target;
+}
+
+function stageExitPromptButtonHtml(className) {
+  setStageExitUnlocked(true);
+  var label = currentStageIdx === gameData.length - 1 ? 'Walk to Final Exit Door' : 'Walk to Exit Door';
+  return '<button class="' + (className || 'btn') + '" style="margin-top:14px;" onclick="cont()">' + label + '</button>';
+}
+
+function isInsideStageExitDoor(px, py) {
+  var d = stageExitDoor;
+  if (!d) return false;
+  return px >= d.x - 0.15 && px <= d.x + d.w + 0.15 && py >= d.y - 0.15 && py <= d.y + d.h + 0.15;
+}
+
+function getStageExitProximity() {
+  var d = stageExitDoor;
+  if (!d) return null;
+  var cx = d.x + d.w / 2, cy = d.y + d.h / 2;
+  var dist = Math.hypot(player.x - cx, player.y - cy);
+  return dist <= 4.2 ? { door: d, dist: dist } : null;
+}
+
+function checkStageExitTransition() {
+  if (!stageExitDoor || !stageExitDoor.unlocked || stageExitTransitioning) return;
+  if (!isInsideStageExitDoor(player.x, player.y)) return;
+  stageExitTransitioning = true;
+  gstate = 'paused';
+  sfx.win();
+  setTempMsg(currentStageIdx === gameData.length - 1 ? 'Final exit reached!' : 'Entering next stage...', 120);
+  setTimeout(function() {
+    stageExitTransitioning = false;
+    if (currentStageIdx === gameData.length - 1) {
+      showAdoptions();
+    } else {
+      currentStageIdx++;
+      showScreen('gamescreen');
+      initStage();
+    }
+  }, 420);
+}
+
 function getDoorTriggerInfo(d) {
   var nearest = null;
   var entities = [{x: player.x, y: player.y}];
@@ -2191,6 +2325,97 @@ function drawDoorPanel(x, y, w, h, base, hi, lo, swinging) {
   ctx.restore();
 }
 
+
+function drawLockGlyph(cx, cy, size) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.lineWidth = Math.max(2, size * 0.12);
+  ctx.strokeStyle = '#F8D66D';
+  ctx.beginPath();
+  ctx.arc(0, -size * 0.08, size * 0.26, Math.PI, 0);
+  ctx.stroke();
+  ctx.fillStyle = '#F8D66D';
+  roundedRectPath(ctx, -size * 0.32, -size * 0.02, size * 0.64, size * 0.48, size * 0.08);
+  ctx.fill();
+  ctx.fillStyle = '#6B3D16';
+  ctx.beginPath();
+  ctx.arc(0, size * 0.18, size * 0.06, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(-size * 0.025, size * 0.18, size * 0.05, size * 0.16);
+  ctx.restore();
+}
+
+function drawStageExitGuide(d) {
+  if (!d || !d.unlocked) return;
+  var cx = (d.x + d.w / 2) * T;
+  var cy = (d.y + d.h / 2) * T;
+  var px = player.x * T;
+  var py = player.y * T;
+  ctx.save();
+  ctx.setLineDash([T * 0.22, T * 0.22]);
+  ctx.lineDashOffset = -tick * 1.2;
+  ctx.lineWidth = Math.max(2, T * 0.08);
+  ctx.strokeStyle = 'rgba(102, 214, 255, 0.58)';
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.lineTo(cx, cy);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawStageExitDoor(d) {
+  if (!d) return;
+  drawStageExitGuide(d);
+
+  var px = d.x * T, py = d.y * T, pw = d.w * T, ph = d.h * T;
+  var cx = px + pw / 2, cy = py + ph / 2;
+  var pulse = 0.5 + 0.5 * Math.sin(tick * 0.11);
+  var glowSize = Math.max(pw, ph) * (d.unlocked ? 1.35 : 0.88);
+  var glow = ctx.createRadialGradient(cx, cy, Math.max(2, T * 0.2), cx, cy, glowSize);
+  glow.addColorStop(0, d.unlocked ? 'rgba(105,220,255,0.36)' : 'rgba(226,75,74,0.20)');
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.save();
+  ctx.fillStyle = glow;
+  ctx.fillRect(cx - glowSize, cy - glowSize, glowSize * 2, glowSize * 2);
+
+  ctx.fillStyle = 'rgba(6, 10, 20, 0.78)';
+  roundedRectPath(ctx, px - T * 0.12, py - T * 0.12, pw + T * 0.24, ph + T * 0.24, T * 0.16);
+  ctx.fill();
+  ctx.strokeStyle = d.unlocked ? 'rgba(126,230,255,0.92)' : 'rgba(248,214,109,0.88)';
+  ctx.lineWidth = Math.max(2, T * 0.07);
+  roundedRectPath(ctx, px - T * 0.08, py - T * 0.08, pw + T * 0.16, ph + T * 0.16, T * 0.16);
+  ctx.stroke();
+
+  var panelBase = d.unlocked ? '#27B4D7' : '#7A3C3C';
+  var panelHi = d.unlocked ? '#7EE6FF' : '#A95151';
+  var panelLo = d.unlocked ? '#146E88' : '#4A2222';
+  if (d.orientation === 'horizontal') {
+    var gap = pw * (0.16 + 0.54 * d.open);
+    var panelW = Math.max(0, (pw - gap) / 2);
+    drawDoorPanel(px, py + ph * 0.18, panelW, ph * 0.64, panelBase, panelHi, panelLo, false);
+    drawDoorPanel(px + pw - panelW, py + ph * 0.18, panelW, ph * 0.64, panelBase, panelHi, panelLo, false);
+  } else {
+    var gapH = ph * (0.16 + 0.54 * d.open);
+    var panelH = Math.max(0, (ph - gapH) / 2);
+    drawDoorPanel(px + pw * 0.18, py, pw * 0.64, panelH, panelBase, panelHi, panelLo, false);
+    drawDoorPanel(px + pw * 0.18, py + ph - panelH, pw * 0.64, panelH, panelBase, panelHi, panelLo, false);
+  }
+
+  if (d.unlocked) {
+    ctx.fillStyle = 'rgba(126,230,255,' + (0.18 + pulse * 0.16) + ')';
+    roundedRectPath(ctx, px + pw * 0.22, py + ph * 0.22, pw * 0.56, ph * 0.56, T * 0.10);
+    ctx.fill();
+    ctx.fillStyle = '#E9FBFF';
+    ctx.font = 'bold ' + Math.max(10, Math.floor(T * 0.34)) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('EXIT', cx, cy);
+  } else {
+    drawLockGlyph(cx, cy, Math.min(pw, ph) * 0.85);
+  }
+  ctx.restore();
+}
+
 // ==========================================
 // GAME ENGINE
 // ==========================================
@@ -2237,10 +2462,13 @@ function buildWalls(stage) {
     [7,8,9].forEach(i => {delete wallSet[wk(i,8)];delete wallSet[wk(i,9)];delete wallSet[wk(i,10)]}); 
     [13,14,15].forEach(j => {delete wallSet[wk(15,j)];delete wallSet[wk(16,j)];delete wallSet[wk(17,j)]}); 
   }
+
+  carveStageExitHole();
 }
 
 function isSolid(fx, fy){
   if(fx<0 || fy<0 || fx>=COLS || fy>=ROWS || wallSet[wk(fx,fy)]) return true;
+  if(stageExitDoor && !stageExitDoor.unlocked && fx >= stageExitDoor.x && fx < stageExitDoor.x + stageExitDoor.w && fy >= stageExitDoor.y && fy < stageExitDoor.y + stageExitDoor.h) return true;
   var stage = gameData[currentStageIdx];
   for(var i=0;i<stage.furniture.length;i++){
     var f=stage.furniture[i];
@@ -2464,9 +2692,9 @@ function performKidAction(targetSpot) {
       gstate = 'challenge';
       var html = '<div class="sheet-handle"></div><div class="sheet-title" style="color:#A32D2D">💥 Stage Ended by Kid!</div><div class="outcome-box outcome-bad">The mischievous kid broke your last device! You lost those points.</div>';
       if(currentStageIdx === gameData.length - 1) {
-        html += '<button class="btn-continue" onclick="document.getElementById(\'challenge-overlay\').classList.remove(\'show\'); setTimeout(showAdoptions,400)">Finish Campaign! 🏆</button>';
+        html += stageExitPromptButtonHtml('btn-continue');
       } else {
-        html += '<button class="btn-continue" onclick="document.getElementById(\'challenge-overlay\').classList.remove(\'show\'); setTimeout(showStageClear,400)">Proceed to Next Map →</button>';
+        html += stageExitPromptButtonHtml('btn-continue');
       }
       document.getElementById('challenge-sheet').innerHTML = html;
       document.getElementById('challenge-overlay').classList.add('show');
@@ -2486,6 +2714,7 @@ function updatePhysics() {
     else if (ft === 'sleep' && tick % 150 === 0) sfx.sleep();
     if (tempMsgTimer > 0) tempMsgTimer--;
     updateDoors();
+    syncStageExitDoor();
     checkNear();
     return;
   }
@@ -2603,11 +2832,14 @@ function updatePhysics() {
   if (tempMsgTimer > 0) tempMsgTimer--;
 
   updateDoors();
+  syncStageExitDoor();
+  checkStageExitTransition();
   checkNear();
 }
 
 function checkNear(){
   var nearSpot = null, nearFixedSpot = null, nearPet = null, nearKid = null, nearFurn = null, stage = gameData[currentStageIdx];
+  var nearExit = getStageExitProximity();
   
   if (kid.active && Math.hypot(player.x - kid.x, player.y - kid.y) <= 3.0) {
     nearKid = kid;
@@ -2644,6 +2876,10 @@ function checkNear(){
     mb.textContent = furnitureActivity.msg; mb.className = 'highlight'; btnE.classList.add('active');
   } else if (tempMsgTimer > 0) {
     mb.textContent = tempMsg; mb.className = 'highlight'; btnE.classList.remove('active');
+  } else if (nearExit && !nearExit.door.unlocked) {
+    mb.textContent = 'Exit door locked - finish every device to open it.'; mb.className = 'danger'; btnE.classList.remove('active');
+  } else if (nearExit && nearExit.door.unlocked) {
+    mb.textContent = 'Exit door open - walk through it to proceed!'; mb.className = 'highlight'; btnE.classList.remove('active');
   } else if (nearKid) {
     var kn = (kid.model && kid.model.name) ? kid.model.name : 'A neighbor kid';
     mb.textContent = '👋 ' + kn + ' the neighbor kid is here! Tap E to talk to them!'; mb.className = 'highlight'; btnE.classList.add('active');
@@ -2665,6 +2901,8 @@ function checkNear(){
       mb.textContent = '🛋️ ' + nearFurn.lbl + ' — Tap E to interact!'; mb.className = '';
     }
     btnE.classList.add('active');
+  } else if (isStageComplete()) {
+    mb.textContent = 'All devices are finished. Follow the glowing exit door.'; mb.className = 'highlight'; btnE.classList.remove('active');
   } else {
     mb.textContent = 'Explore the area to find energy problems!'; mb.className = ''; btnE.classList.remove('active');
   }
@@ -3409,6 +3647,11 @@ function drawGame(){
   updatePhysics(); var stage = gameData[currentStageIdx];
   ctx.clearRect(0,0,W,H); ctx.fillStyle = stage.bg; ctx.fillRect(0,0,W,H);
 
+  var useCamera = !compactMobile;
+  if (useCamera) updateCamera(); else { camera.x = 0; camera.y = 0; }
+  ctx.save();
+  if (useCamera) ctx.translate(camera.x, camera.y);
+
   drawWalls();
 
   stage.rooms.forEach(r => {
@@ -3463,7 +3706,7 @@ function drawGame(){
   });
 
   currentDoors.forEach(drawDoor);
-
+  drawStageExitDoor(stageExitDoor);
 
   currentPets.forEach(pet => {
     drawAnimal(pet);
@@ -3528,6 +3771,8 @@ function drawGame(){
 
   if (furnitureActivity) drawFurnitureActivitySprite();
   else drawSprite(player.x, player.y, player.moving);
+
+  ctx.restore();
 
   var vig = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.35, W/2, H/2, Math.max(W,H)*0.72);
   vig.addColorStop(0, 'rgba(0,0,0,0)');
@@ -3798,9 +4043,9 @@ function resolvePetInteract() {
   
   if (stageFixedCount === 5) {
     if(currentStageIdx === gameData.length - 1) {
-      html+=`<button class="btn-continue" style="margin-top:14px;" onclick="document.getElementById('challenge-overlay').classList.remove('show'); setTimeout(showAdoptions,400)">Finish Campaign! 🏆</button>`;
+      html += stageExitPromptButtonHtml('btn-continue');
     } else {
-      html+=`<button class="btn-continue" style="margin-top:14px;" onclick="document.getElementById('challenge-overlay').classList.remove('show'); setTimeout(showStageClear,400)">Proceed to Next Map →</button>`;
+      html += stageExitPromptButtonHtml('btn-continue');
     }
   } else {
     html += '<button class="btn-continue" style="margin-top:14px;" onclick="cont()">Continue Exploring</button>';
@@ -3921,9 +4166,9 @@ function resolve(idx){
     
     if(stageFixedCount === 5){
       if(currentStageIdx === gameData.length - 1) {
-        html+=`<button class="btn" style="margin-top:14px;" onclick="document.getElementById('challenge-overlay').classList.remove('show'); setTimeout(showAdoptions,400)">Finish Campaign! 🏆</button>`;
+        html += stageExitPromptButtonHtml('btn');
       } else {
-        html+=`<button class="btn" style="margin-top:14px;" onclick="document.getElementById('challenge-overlay').classList.remove('show'); setTimeout(showStageClear,400)">Proceed to Next Map →</button>`;
+        html += stageExitPromptButtonHtml('btn');
       }
     } else {
       html+=`<button class="btn" style="margin-top:14px;" onclick="cont()">Continue Exploring</button>`;
@@ -3956,9 +4201,9 @@ function resolve(idx){
       
       if(stageFixedCount === 5){
         if(currentStageIdx === gameData.length - 1) {
-          html+=`<button class="btn" style="margin-top:14px;" onclick="document.getElementById('challenge-overlay').classList.remove('show'); setTimeout(showAdoptions,400)">Finish Campaign! 🏆</button>`;
+          html += stageExitPromptButtonHtml('btn');
         } else {
-          html+=`<button class="btn" style="margin-top:14px;" onclick="document.getElementById('challenge-overlay').classList.remove('show'); setTimeout(showStageClear,400)">Proceed to Next Map →</button>`;
+          html += stageExitPromptButtonHtml('btn');
         }
       } else {
         html+=`<button class="btn" style="margin-top:14px;" onclick="cont()">Continue Exploring</button>`;
@@ -3975,15 +4220,37 @@ function resolve(idx){
 }
 
 function retry(){ showChallenge(activeSpot); }
-function cont(){ gstate='playing'; activeSpot=null; activePet=null; activeNpc=null; furnitureActivity=null; document.getElementById('challenge-overlay').classList.remove('show'); keys = {w:0, a:0, s:0, d:0, ArrowUp:0, ArrowDown:0, ArrowLeft:0, ArrowRight:0}; }
+function cont(){ gstate='playing'; activeSpot=null; activePet=null; activeNpc=null; furnitureActivity=null; document.getElementById('challenge-overlay').classList.remove('show'); if(isStageComplete()) setStageExitUnlocked(true); keys = {w:0, a:0, s:0, d:0, ArrowUp:0, ArrowDown:0, ArrowLeft:0, ArrowRight:0}; }
 
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-function resizeCanvas(){ var wrap=document.getElementById('canvas-wrap'); W=wrap.clientWidth; H=wrap.clientHeight; cv.width=W; cv.height=H; T=Math.floor(Math.min(W/COLS, H/ROWS)); }
+
+function enterGameFullscreen() {
+  var el = document.documentElement;
+  if (el.requestFullscreen && !document.fullscreenElement) {
+    el.requestFullscreen().catch(function(){});
+  }
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(function(){});
+  }
+}
+
+function updateCamera() {
+  if (!T) return;
+  var target = furnitureActivity ? { x: furnitureActivity.x, y: furnitureActivity.y } : player;
+  var worldW = COLS * T, worldH = ROWS * T;
+  var tx = W / 2 - target.x * T;
+  var ty = H / 2 - target.y * T;
+  camera.x = worldW > W ? Math.min(0, Math.max(W - worldW, tx)) : (W - worldW) / 2;
+  camera.y = worldH > H ? Math.min(0, Math.max(H - worldH, ty)) : (H - worldH) / 2;
+}
+function resizeCanvas(){ var wrap=document.getElementById('canvas-wrap'); W=wrap.clientWidth; H=wrap.clientHeight; cv.width=W; cv.height=H; compactMobile = Math.min(window.innerWidth, window.innerHeight) < 650 && Math.max(window.innerWidth, window.innerHeight) < 950; T = compactMobile ? Math.floor(Math.min(W/COLS, H/ROWS)) : Math.max(36, Math.min(72, Math.floor(Math.min(W, H) / 7.2))); updateCamera(); }
 window.addEventListener('resize', () => { if(document.getElementById('gamescreen').classList.contains('active')) resizeCanvas(); });
 
 function initStage() {
   stageFixedCount = 0; 
   furnitureActivity = null;
+  stageExitNoticeShown = false;
+  stageExitTransitioning = false;
   player.x = gameData[currentStageIdx].startX; 
   player.y = gameData[currentStageIdx].startY;
   
@@ -4009,6 +4276,7 @@ function initStage() {
              name: info.name, species: info.species, model: info.model, label: info.label };
   });
   currentDoors = makeStageDoors(currentStageIdx);
+  stageExitDoor = makeStageExitDoor(currentStageIdx);
   gameData[currentStageIdx].spots.forEach(s => { s.fixed = false; s.broken = false; s.attempts = 0; });
   if (gameData[currentStageIdx].npc) { gameData[currentStageIdx].npc.done = false; gameData[currentStageIdx].npc.correct = false; gameData[currentStageIdx].npc._ph = Math.random()*6.28; }
 
@@ -4021,7 +4289,7 @@ function initStage() {
 }
 
 function startGame() { 
-  initAudio(); sfx.pop();
+  initAudio(); enterGameFullscreen(); sfx.pop();
   currentStageIdx = 0; totalScore = 0; totalSavings = 0; lostPetEmojis = []; answerHistory = [];
   
   stagesWithKid = [0]; 

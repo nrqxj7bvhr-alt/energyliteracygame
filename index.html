@@ -28,8 +28,30 @@
   .how-box { background: var(--bg); border-radius: 12px; padding: 14px 16px; text-align: left; margin-bottom: 20px; }
   .how-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
   .how-item { font-size: 13px; color: var(--muted); padding: 3px 0; line-height: 1.5; }
+  .player-box { background: #fff; border: 2px solid var(--border); border-radius: 14px; padding: 12px; text-align: left; margin-bottom: 14px; }
+  .player-label { display: block; font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+  .player-input { width: 100%; border: 2px solid var(--border); border-radius: 12px; padding: 13px 14px; font-size: 16px; font-weight: 700; color: var(--text); outline: none; }
+  .player-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(29,158,117,0.12); }
+  .name-error { min-height: 18px; padding-top: 5px; font-size: 12px; color: var(--darkred); font-weight: 700; }
+  .leaderboard-box { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 16px; text-align: left; }
+  .leaderboard-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+  .leaderboard-list { display: flex; flex-direction: column; gap: 6px; }
+  .leaderboard-row { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; background: rgba(255,255,255,0.78); border-radius: 10px; padding: 7px 9px; font-size: 13px; }
+  .leaderboard-rank { color: var(--blue); font-weight: 900; }
+  .leaderboard-name { color: var(--text); font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .leaderboard-score { color: var(--darkgreen); font-weight: 900; }
+  .leaderboard-empty { color: var(--muted); font-size: 13px; line-height: 1.5; }
+  .leaderboard-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 8px; }
   .btn { width: 100%; padding: 16px; background: var(--green); color: #fff; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.1s; }
   .btn:active { transform: scale(0.98); }
+  .btn-secondary { margin-top: 10px; background: #fff; color: var(--blue); border: 2px solid var(--border); }
+  .tutorial-card { max-width: 760px; }
+  .tutorial-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0 18px; text-align: left; }
+  .tutorial-step { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; min-height: 178px; }
+  .tutorial-demo { height: 62px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; background: #151827; color: #fff; font-size: 28px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+  .tutorial-step-title { font-size: 14px; color: var(--text); font-weight: 800; margin-bottom: 6px; }
+  .tutorial-step-text { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .tutorial-key { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background: var(--green); color: #fff; font-size: 13px; font-weight: 800; }
 
   /* GAME SCREEN */
   #gamescreen { flex-direction: column; overflow: hidden; position: relative; background: #070914; }
@@ -115,6 +137,8 @@
   .review-answer.good strong { color: var(--darkgreen); }
   .review-answer.bad strong { color: var(--darkred); }
 
+  @media (max-width: 760px) { .tutorial-grid { grid-template-columns: 1fr; } .tutorial-step { min-height: auto; } }
+
   @media (max-width: 650px), (max-height: 520px) {
     #gamescreen { flex-direction: column; background: var(--bg); }
     #hud { position: relative; z-index: 30; top: auto; left: auto; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; width: auto; padding: 8px 8px 4px; background: #fff; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; box-shadow: none; backdrop-filter: none; flex-shrink: 0; }
@@ -144,17 +168,28 @@
   <div class="card" style="max-width: 720px;">
     <div class="icon">🌍</div>
     <div class="title">Energy Detective: Campaign</div>
-    <div class="sub">Progress through 5 unique stages uncovering hidden energy waste to save money and the planet!</div>
+    <div class="sub">Enter your name, learn the basics, then clear each room and chase a top score.</div>
+
+    <div class="player-box">
+      <label class="player-label" for="player-name">Player name</label>
+      <input id="player-name" class="player-input" maxlength="18" autocomplete="off" placeholder="Type your name">
+      <div class="name-error" id="name-error"></div>
+    </div>
+
     <div class="how-box">
       <div class="how-title">How to play</div>
-      <div class="how-item">🕹️ Use Joystick or WASD to move</div>
-      <div class="how-item">🔎 Find 5 energy problems per stage</div>
-      <div class="how-item">🚪 The exit door opens only after every device is finished</div>
-      <div class="how-item">🧮 Each stage has only 1 simple calculation question</div>
-      <div class="how-item">👆 Tap [E] near spots, furniture, or characters to interact</div>
-      <div class="how-item">🧒 <b>Watch out for the Neighbor Kids!</b> Different kids show up each area — some are good (fix things) and some are sneaky (break things). Kick them out by pressing [E] near them.</div>
+      <div class="how-item">🕹️ Move with the joystick or WASD.</div>
+      <div class="how-item">⚠️ <b>Fix a device:</b> walk near a warning device, tap <b>E</b>, then choose the best answer.</div>
+      <div class="how-item">🐈 <b>Interact with the cat:</b> walk near it and tap <b>E</b>. You can pet it or leave it alone.</div>
+      <div class="how-item">🚪 <b>Get out:</b> finish all 5 devices, then walk through the open exit door on the outside wall.</div>
     </div>
-    <button class="btn" onclick="startGame()">Start Campaign →</button>
+
+    <div class="leaderboard-box">
+      <div class="leaderboard-title">Top 10 Leaderboard</div>
+      <div class="leaderboard-list" id="leaderboard-list"></div>
+    </div>
+
+    <button class="btn" onclick="startGame()">Start Campaign</button>
   </div>
 </div>
 
@@ -199,8 +234,14 @@
     <div class="title">Campaign Complete!</div>
     <div class="sub">You have mastered electrical energy literacy across the entire city!</div>
     <div class="how-box" style="text-align: center;">
+      <div class="how-item">Player: <strong style="color:var(--text); font-size:18px;" id="ws-player"></strong></div>
       <div class="how-item">Total Savings: <strong style="color:var(--darkgreen); font-size:18px;" id="ws-save"></strong></div>
       <div class="how-item">Final Score: <strong style="color:var(--blue); font-size:18px;" id="ws-score"></strong></div>
+      <div class="how-item" id="leaderboard-result" style="font-weight:800;"></div>
+    </div>
+    <div class="leaderboard-box">
+      <div class="leaderboard-title">Final Leaderboard</div>
+      <div class="leaderboard-list" id="win-leaderboard-list"></div>
     </div>
     <div class="title" style="font-size:18px; margin-top:4px;">Answer Review</div>
     <div class="sub" style="margin-bottom:10px;">Check each question, your answer, and the correct answer.</div>
@@ -513,6 +554,11 @@ var currentStageIdx = 0;
 var totalScore = 0;
 var totalSavings = 0;
 var lostPetEmojis = []; 
+var playerName = "";
+var leaderboard = [];
+var leaderboardFileLoaded = false;
+var LEADERBOARD_KEY = "energyDetectiveTop10Leaderboard";
+var LAST_PLAYER_KEY = "energyDetectiveLastPlayerName";
 
 // Neighbor Kid State
 var stagesWithKid = [];
@@ -4109,6 +4155,112 @@ function showChallenge(s){
   document.getElementById('challenge-overlay').classList.add('show');
 }
 
+function normalizePlayerName(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 18);
+}
+
+function readStoredLeaderboard() {
+  try {
+    var parsed = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeStoredLeaderboard(rows) {
+  try { localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(rows.slice(0, 10))); } catch (e) {}
+}
+
+function sanitizeLeaderboardRows(rows) {
+  var byName = {};
+  (Array.isArray(rows) ? rows : []).forEach(function(row) {
+    var name = normalizePlayerName(row && row.name);
+    var score = Number(row && row.score);
+    if (!name || !Number.isFinite(score)) return;
+    score = Math.max(0, Math.floor(score));
+    var key = name.toLowerCase();
+    var cleaned = {
+      name: name,
+      score: score,
+      savings: Math.max(0, Math.floor(Number(row.savings) || 0)),
+      date: row.date || ''
+    };
+    if (!byName[key] || cleaned.score > byName[key].score) byName[key] = cleaned;
+  });
+  return Object.keys(byName).map(function(key) { return byName[key]; })
+    .sort(function(a, b) { return (b.score - a.score) || (b.savings - a.savings) || a.name.localeCompare(b.name); })
+    .slice(0, 10);
+}
+
+function setLeaderboardRows(rows) {
+  leaderboard = sanitizeLeaderboardRows(rows);
+  writeStoredLeaderboard(leaderboard);
+  renderLeaderboard();
+}
+
+function loadLeaderboardData(forceFileRead) {
+  leaderboard = sanitizeLeaderboardRows(readStoredLeaderboard());
+  renderLeaderboard();
+  if ((!forceFileRead && leaderboardFileLoaded) || !(location.protocol === 'http:' || location.protocol === 'https:')) return;
+  leaderboardFileLoaded = true;
+  fetch('leaderboard.json', { cache: 'no-store' })
+    .then(function(res) { return res.ok ? res.json() : []; })
+    .then(function(rows) { setLeaderboardRows([].concat(rows || [], readStoredLeaderboard())); })
+    .catch(function() { renderLeaderboard(); });
+}
+
+function renderLeaderboard() {
+  var html = leaderboard.length ? leaderboard.map(function(row, idx) {
+    return '<div class="leaderboard-row"><div class="leaderboard-rank">#' + (idx + 1) + '</div><div class="leaderboard-name">' + escapeHtml(row.name) + '</div><div class="leaderboard-score">' + row.score + '</div></div>';
+  }).join('') : '<div class="leaderboard-empty">No scores yet. Be the first name on the board.</div>';
+  ['leaderboard-list', 'win-leaderboard-list'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  });
+}
+
+function capturePlayerName() {
+  var input = document.getElementById('player-name');
+  var err = document.getElementById('name-error');
+  var name = normalizePlayerName(input ? input.value : playerName);
+  if (!name) {
+    if (err) err.textContent = 'Please type your name before starting.';
+    if (input) input.focus();
+    return false;
+  }
+  playerName = name;
+  if (input) input.value = name;
+  if (err) err.textContent = '';
+  try { localStorage.setItem(LAST_PLAYER_KEY, name); } catch (e) {}
+  return true;
+}
+
+function updateLeaderboardScore() {
+  var name = normalizePlayerName(playerName) || 'Player';
+  var key = name.toLowerCase();
+  var rows = sanitizeLeaderboardRows(leaderboard.concat(readStoredLeaderboard()));
+  var existing = rows.find(function(row) { return row.name.toLowerCase() === key; });
+  if (!existing || totalScore > existing.score) {
+    rows = rows.filter(function(row) { return row.name.toLowerCase() !== key; });
+    rows.push({ name: name, score: totalScore, savings: totalSavings, date: new Date().toISOString().slice(0, 10) });
+    setLeaderboardRows(rows);
+    var rank = leaderboard.findIndex(function(row) { return row.name.toLowerCase() === key; }) + 1;
+    return rank > 0 ? 'New high score! Rank #' + rank + '.' : 'New high score saved.';
+  }
+  setLeaderboardRows(rows);
+  return 'Best score for ' + name + ' remains ' + existing.score + '.';
+}
+
+function initPlayerAndLeaderboardUi() {
+  var input = document.getElementById('player-name');
+  if (input) {
+    try { input.value = localStorage.getItem(LAST_PLAYER_KEY) || ''; } catch (e) {}
+    input.addEventListener('keydown', function(e) { if (e.key === 'Enter') startGame(); });
+  }
+  loadLeaderboardData();
+}
+
 function escapeHtml(value) {
   return String(value || '').replace(/[&<>"']/g, function(ch) {
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
@@ -4289,6 +4441,8 @@ function initStage() {
 }
 
 function startGame() { 
+  if(!capturePlayerName()) return;
+  loadLeaderboardData(true);
   initAudio(); enterGameFullscreen(); sfx.pop();
   currentStageIdx = 0; totalScore = 0; totalSavings = 0; lostPetEmojis = []; answerHistory = [];
   
@@ -4337,9 +4491,12 @@ function showAdoptions() {
 
 function showWin() { 
   gstate='paused'; sfx.win();
+  document.getElementById('ws-player').textContent = playerName || 'Player';
   document.getElementById('ws-save').textContent = 'RM '+totalSavings+'/month'; 
   document.getElementById('ws-score').textContent = totalScore+' pts';
+  document.getElementById('leaderboard-result').textContent = updateLeaderboardScore();
   document.getElementById('answer-review').innerHTML = buildAnswerReview();
+  renderLeaderboard();
   showScreen('winscreen'); 
 }
 
@@ -4354,6 +4511,7 @@ function handleJoy(cx, cy) {
 joyZone.addEventListener('touchstart', e => { jActive=true; handleJoy(e.touches[0].clientX, e.touches[0].clientY); }); document.addEventListener('touchmove', e => { if(jActive) handleJoy(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false}); document.addEventListener('touchend', () => { jActive=false; joyX=0; joyY=0; joyStick.style.transform = 'translate(0,0)'; });
 joyZone.addEventListener('mousedown', e => { jActive=true; handleJoy(e.clientX, e.clientY); }); document.addEventListener('mousemove', e => { if(jActive) handleJoy(e.clientX, e.clientY); }); document.addEventListener('mouseup', () => { jActive=false; joyX=0; joyY=0; joyStick.style.transform = 'translate(0,0)'; });
 document.addEventListener('keydown', e => { if(keys[e.key] !== undefined) keys[e.key] = 1; if(e.key.toLowerCase() === 'e') interact(); }); document.addEventListener('keyup', e => { if(keys[e.key] !== undefined) keys[e.key] = 0; });
+initPlayerAndLeaderboardUi();
 </script>
 </body>
 </html>

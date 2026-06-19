@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -32,11 +32,20 @@
   .guide-title { font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
   .guide-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .guide-item { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: center; background: rgba(255,255,255,0.86); border: 1px solid rgba(224,222,216,0.95); border-radius: 12px; padding: 10px; }
-  .guide-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.55); }
+  .guide-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.55); overflow: hidden; }
+  .guide-icon::before, .guide-icon::after { content: ""; position: absolute; display: block; }
   .guide-icon.move { background: #E7F0FF; }
+  .guide-icon.move::before { width: 11px; height: 30px; border-radius: 6px; background: #185FA5; }
+  .guide-icon.move::after { width: 30px; height: 11px; border-radius: 6px; background: #185FA5; }
   .guide-icon.fix { background: #FFF0D9; }
+  .guide-icon.fix::before { width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 28px solid #EF9F27; top: 8px; }
+  .guide-icon.fix::after { content: "!"; top: 15px; color: #fff; font-size: 18px; font-weight: 900; line-height: 1; }
   .guide-icon.cat { background: #FCE8DD; }
+  .guide-icon.cat::before { width: 25px; height: 21px; border-radius: 50% 50% 46% 46%; background: #D97848; top: 15px; box-shadow: -9px -8px 0 -5px #D97848, 9px -8px 0 -5px #D97848; }
+  .guide-icon.cat::after { content: ""; width: 4px; height: 4px; border-radius: 50%; background: #151827; top: 23px; left: 15px; box-shadow: 10px 0 0 #151827, 5px 6px 0 -1px #151827; }
   .guide-icon.exit { background: #E5F7EF; }
+  .guide-icon.exit::before { width: 20px; height: 30px; border-radius: 3px 6px 6px 3px; background: #B66B45; box-shadow: inset -4px 0 0 rgba(0,0,0,0.12); }
+  .guide-icon.exit::after { width: 5px; height: 5px; border-radius: 50%; background: #F8E4A6; right: 13px; top: 22px; }
   .guide-copy-title { font-size: 13px; font-weight: 900; color: var(--text); margin-bottom: 2px; }
   .guide-copy-text { font-size: 12px; line-height: 1.45; color: var(--muted); }
   .keycap { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 7px; background: #151827; color: #fff; font-size: 12px; font-weight: 900; }
@@ -178,7 +187,7 @@
 
 <div id="intro" class="screen active">
   <div class="card" style="max-width: 720px;">
-    <div class="icon">ðŸŒ</div>
+    <div class="icon">🌍</div>
     <div class="title">Energy Detective: Campaign</div>
     <div class="sub">Enter your name, learn the basics, then clear each room and chase a top score.</div>
 
@@ -192,28 +201,28 @@
       <div class="guide-title">How to play</div>
       <div class="guide-list">
         <div class="guide-item">
-          <div class="guide-icon move">ðŸ•¹ï¸</div>
+          <div class="guide-icon move" role="img" aria-label="Move"></div>
           <div>
             <div class="guide-copy-title">Move</div>
             <div class="guide-copy-text">Use the joystick or <span class="keycap">WASD</span>.</div>
           </div>
         </div>
         <div class="guide-item">
-          <div class="guide-icon fix">âš ï¸</div>
+          <div class="guide-icon fix" role="img" aria-label="Fix a device"></div>
           <div>
             <div class="guide-copy-title">Fix a device</div>
             <div class="guide-copy-text">Stand near a warning device, tap <span class="keycap">E</span>, then choose the best answer.</div>
           </div>
         </div>
         <div class="guide-item">
-          <div class="guide-icon cat">ðŸˆ</div>
+          <div class="guide-icon cat" role="img" aria-label="Cat interaction"></div>
           <div>
             <div class="guide-copy-title">Interact with the cat</div>
             <div class="guide-copy-text">Walk near it and tap <span class="keycap">E</span>. Pet it or leave it alone.</div>
           </div>
         </div>
         <div class="guide-item">
-          <div class="guide-icon exit">ðŸšª</div>
+          <div class="guide-icon exit" role="img" aria-label="Exit door"></div>
           <div>
             <div class="guide-copy-title">Get out</div>
             <div class="guide-copy-text">Finish all 5 devices, then walk through the open door on the outer wall.</div>
@@ -234,10 +243,10 @@
 
 <div id="stagescreen" class="screen">
   <div class="card">
-    <div class="icon" id="stage-icon">ðŸ—ºï¸</div>
+    <div class="icon" id="stage-icon">🗺️</div>
     <div class="title" id="stage-title">Stage Complete!</div>
     <div class="sub" id="stage-sub">You have cleared this area.</div>
-    <button class="btn" onclick="loadNextStage()">Proceed to Next Stage â†’</button>
+    <button class="btn" onclick="loadNextStage()">Proceed to Next Stage →</button>
   </div>
 </div>
 
@@ -248,7 +257,7 @@
     <div class="hc"><div class="hl">Saved</div><div class="hv g" id="hsave">RM 0</div></div>
     <div class="hc"><div class="hl">Score</div><div class="hv" id="hscore">0 pts</div></div>
   </div>
-  <button id="audio-toggle" onclick="toggleAudio()">ðŸ”Š</button>
+  <button id="audio-toggle" onclick="toggleAudio()">🔊</button>
   <div id="canvas-wrap"><canvas id="cv"></canvas></div>
   <div id="msgbar">Find the 5 energy problems in this stage!</div>
   <div id="controls">
@@ -259,17 +268,17 @@
 
 <div id="adoptionscreen" class="screen">
   <div class="card" style="max-width: 500px; padding: 24px 16px;">
-    <div class="icon">ðŸ¡</div>
+    <div class="icon">🏡</div>
     <div class="title">Animal Sanctuary</div>
     <div class="sub">Look at the animals you successfully adopted!</div>
     <div class="adoption-list" id="adoption-list"></div>
-    <button class="btn" onclick="showWin()">See Final Score â†’</button>
+    <button class="btn" onclick="showWin()">See Final Score →</button>
   </div>
 </div>
 
 <div id="winscreen" class="screen">
   <div class="card">
-    <div class="icon">ðŸ†</div>
+    <div class="icon">🏆</div>
     <div class="title">Campaign Complete!</div>
     <div class="sub">You have mastered electrical energy literacy across the entire city!</div>
     <div class="how-box" style="text-align: center;">
@@ -622,14 +631,14 @@ var firebaseLeaderboardAvailable = false;
 // Neighbor Kid State
 var stagesWithKid = [];
 var kidModels = [
-  { emoji: 'ðŸ§’', skin: '#F5C4B3', hair: '#5a3000', shirt: '#E24B4A', name: 'Sam' },
-  { emoji: 'ðŸ‘¦', skin: '#8D5524', hair: '#1a1a1a', shirt: '#185FA5', name: 'Leo' },
-  { emoji: 'ðŸ‘§', skin: '#FFDBAC', hair: '#7a4b12', shirt: '#EF9F27', name: 'Mia' },
-  { emoji: 'ðŸ§‘', skin: '#C68642', hair: '#3a2400', shirt: '#1D9E75', name: 'Ari' },
-  { emoji: 'ðŸ‘¨â€ðŸ¦±', skin: '#E0AC69', hair: '#2b1700', shirt: '#7B4FB5', name: 'Theo' },
-  { emoji: 'ðŸ‘©â€ðŸ¦°', skin: '#F1C27D', hair: '#A8431E', shirt: '#0FA3B1', name: 'Ivy' }
+  { emoji: '🧒', skin: '#F5C4B3', hair: '#5a3000', shirt: '#E24B4A', name: 'Sam' },
+  { emoji: '👦', skin: '#8D5524', hair: '#1a1a1a', shirt: '#185FA5', name: 'Leo' },
+  { emoji: '👧', skin: '#FFDBAC', hair: '#7a4b12', shirt: '#EF9F27', name: 'Mia' },
+  { emoji: '🧑', skin: '#C68642', hair: '#3a2400', shirt: '#1D9E75', name: 'Ari' },
+  { emoji: '👨‍🦱', skin: '#E0AC69', hair: '#2b1700', shirt: '#7B4FB5', name: 'Theo' },
+  { emoji: '👩‍🦰', skin: '#F1C27D', hair: '#A8431E', shirt: '#0FA3B1', name: 'Ivy' }
 ];
-var kid = { active: false, x: 5, y: 5, radius: 0.4, speed: 0.05, type: 'good', interactionsLeft: 2, emoji: 'ðŸ§’', model: null, state: 'idle', target: null, timer: 0, path: null };
+var kid = { active: false, x: 5, y: 5, radius: 0.4, speed: 0.05, type: 'good', interactionsLeft: 2, emoji: '🧒', model: null, state: 'idle', target: null, timer: 0, path: null };
 var tempMsg = "", tempMsgTimer = 0;
 
 // Stage Progress
@@ -659,14 +668,14 @@ var wallSet = {};
 var gameData = [
   // STAGE 1: THE HOUSE
   {
-    name: "The House", icon: "ðŸ ", bg: "#2C2C2A", startX: 7, startY: 8,
-    npc: { x:4, y:5.4, pose:'sit', facing:1, name:'Granny May', role:'Grandma', avatar:'ðŸ‘µ',
+    name: "The House", icon: "🏠", bg: "#2C2C2A", startX: 7, startY: 8,
+    npc: { x:4, y:5.4, pose:'sit', facing:1, name:'Granny May', role:'Grandma', avatar:'👵',
       model:{skin:'#EAC6A8', skinHi:'#F6DBC6', hair:'#CFCFCF', shirt:'#9C6BA3', acc:'bun'},
       greet:"Oh, hello dear! Come sit with your gran. Let me see what you've learned about saving electricity.",
       q:"Which gives the same brightness using the LEAST electricity?",
       choices:['An LED bulb','An old incandescent bulb','A halogen lamp'], goodIdx:0,
       gout:"Clever child! LEDs use about 85% less energy for the same light.",
-      bout:"Not quite â€” older bulbs waste most of their energy as heat. LEDs are the efficient pick.",
+      bout:"Not quite — older bulbs waste most of their energy as heat. LEDs are the efficient pick.",
       fact:"Switching to LED lighting is one of the cheapest ways to cut a home's power bill.", pts:150 },
     rooms: [
       {label:'Living room', x:1, y:1, w:12, h:11, rc:'#F8F6F0', pt:'lines'},
@@ -674,15 +683,15 @@ var gameData = [
       {label:'Bedroom', x:1, y:13, w:23, h:11, rc:'#F5F0FA', pt:'dots'}
     ],
     furniture: [
-      {x:2,y:5,w:5,h:2,c:'#C66459', e:'ðŸ›‹ï¸', lbl:'Sofa'},
-      {x:3,y:9,w:3,h:2,c:'#1F2937', e:'ðŸ“º', lbl:'TV'},
-      {x:2,y:2,w:3,h:2,c:'#3A3330', e:'ðŸ”¥', lbl:'Fireplace'},
-      {x:9,y:2,w:2,h:4,c:'#6E4A2E', e:'ðŸ“š', lbl:'Bookshelf'},
-      {x:16,y:2,w:3,h:3,c:'#9CA3AF', e:'ðŸ³', lbl:'Stove'},
-      {x:16,y:7,w:4,h:3,c:'#8B5A38', e:'ðŸ½ï¸', lbl:'Table'},
-      {x:2,y:16,w:4,h:3,c:'#C25B52', e:'ðŸ›ï¸', lbl:'Bed'},
-      {x:11,y:16,w:5,h:3,c:'#7C2D3A', e:'ðŸŸ¥', lbl:'Rug', noCollide:true},
-      {x:21,y:18,w:2,h:4,c:'#6E4A2E', e:'ðŸ“š', lbl:'Bookshelf'}
+      {x:2,y:5,w:5,h:2,c:'#C66459', e:'🛋️', lbl:'Sofa'},
+      {x:3,y:9,w:3,h:2,c:'#1F2937', e:'📺', lbl:'TV'},
+      {x:2,y:2,w:3,h:2,c:'#3A3330', e:'🔥', lbl:'Fireplace'},
+      {x:9,y:2,w:2,h:4,c:'#6E4A2E', e:'📚', lbl:'Bookshelf'},
+      {x:16,y:2,w:3,h:3,c:'#9CA3AF', e:'🍳', lbl:'Stove'},
+      {x:16,y:7,w:4,h:3,c:'#8B5A38', e:'🍽️', lbl:'Table'},
+      {x:2,y:16,w:4,h:3,c:'#C25B52', e:'🛏️', lbl:'Bed'},
+      {x:11,y:16,w:5,h:3,c:'#7C2D3A', e:'🟥', lbl:'Rug', noCollide:true},
+      {x:21,y:18,w:2,h:4,c:'#6E4A2E', e:'📚', lbl:'Bookshelf'}
     ],
     decor: [
       {kind:'window',x:4,y:1,w:2,h:1},
@@ -701,33 +710,33 @@ var gameData = [
       {kind:'clock',x:22,y:13,w:1,h:1}
     ],
     pets: [
-      { x: 10, y: 10, radius: 0.4, baseVx: 0.05, baseVy: 0.03, emoji: 'ðŸˆ' },
-      { x: 18, y: 18, radius: 0.4, baseVx: -0.06, baseVy: 0.05, emoji: 'ðŸ•' }
+      { x: 10, y: 10, radius: 0.4, baseVx: 0.05, baseVy: 0.03, emoji: '🐈' },
+      { x: 18, y: 18, radius: 0.4, baseVx: -0.06, baseVy: 0.05, emoji: '🐕' }
     ],
     spots: [
-      {x:10, y:7, w:2, h:2, label:'AC Unit', danger:true, e:'â„', chapter:'Energy Consumption & Cost',
-       calc:{given:[['Power rating','1 kW'],['Usage','2 h/day'],['Formula','kWh = kW Ã— h']], ask:'Daily energy used by the AC?'},
-       situation:'A 1 kW air-con unit runs 2 hours a day. How much energy does it use in one day?', choices:['2 kWh/day','1 kWh/day','20 kWh/day'], goodIdx:0, gout:'1 kW Ã— 2 h = 2 kWh/day.', bout:'Just multiply the power by the hours: 1 Ã— 2.', fact:'kWh = power (kW) Ã— hours. AC is one of the biggest loads in a home.', savings:25, pts:100},
-      {x:20, y:3, w:2, h:2, label:'Refrigerator', danger:true, e:'ðŸ§Š', chapter:'Energy Consumption & Cost',
+      {x:10, y:7, w:2, h:2, label:'AC Unit', danger:true, e:'❄', chapter:'Energy Consumption & Cost',
+       calc:{given:[['Power rating','1 kW'],['Usage','2 h/day'],['Formula','kWh = kW × h']], ask:'Daily energy used by the AC?'},
+       situation:'A 1 kW air-con unit runs 2 hours a day. How much energy does it use in one day?', choices:['2 kWh/day','1 kWh/day','20 kWh/day'], goodIdx:0, gout:'1 kW × 2 h = 2 kWh/day.', bout:'Just multiply the power by the hours: 1 × 2.', fact:'kWh = power (kW) × hours. AC is one of the biggest loads in a home.', savings:25, pts:100},
+      {x:20, y:3, w:2, h:2, label:'Refrigerator', danger:true, e:'🧊', chapter:'Energy Consumption & Cost',
        situation:'The fridge door seal is loose and cold air leaks out. What is the best fix?', choices:['Repair the seal so the door closes tightly','Keep opening the door to check it','Turn the fridge colder'], goodIdx:0, gout:'A tight door seal keeps cold air inside, so the fridge works less.', bout:'A colder setting or extra door opening makes the fridge work harder.', fact:'A fridge runs 24/7, so small waste adds up over a month.', savings:15, pts:100},
-      {x:3, y:9, w:3, h:2, label:'Television', danger:false, e:'ðŸ“º', chapter:'Energy Consumption & Cost',
-       situation:'A 150 W TV is left on standby all night instead of being switched off. What is the smartest habit?', choices:['Switch it off fully at the wall','Leave it on standby for convenience','Turn the brightness down only'], goodIdx:0, gout:'Switching off at the wall removes standby (vampire) load completely.', bout:'Standby and dimming still draw power; only full off stops the drain.', fact:'Standby loads can be 10â€“15% of a home electricity bill.', savings:18, pts:100},
-      {x:6, y:16, w:2, h:2, label:'LED Lamps', danger:true, e:'ðŸ’¡', chapter:'Energy Consumption & Cost',
+      {x:3, y:9, w:3, h:2, label:'Television', danger:false, e:'📺', chapter:'Energy Consumption & Cost',
+       situation:'A 150 W TV is left on standby all night instead of being switched off. What is the smartest habit?', choices:['Switch it off fully at the wall','Leave it on standby for convenience','Turn the brightness down only'], goodIdx:0, gout:'Switching off at the wall removes standby (vampire) load completely.', bout:'Standby and dimming still draw power; only full off stops the drain.', fact:'Standby loads can be 10–15% of a home electricity bill.', savings:18, pts:100},
+      {x:6, y:16, w:2, h:2, label:'LED Lamps', danger:true, e:'💡', chapter:'Energy Consumption & Cost',
        situation:'You need the same brightness with less electricity. Which lamp should you choose?', choices:['LED lamp','Old incandescent bulb','Halogen bulb'], goodIdx:0, gout:'LED lamps give the same light using much less electricity.', bout:'Incandescent and halogen bulbs waste more energy as heat.', fact:'LEDs use about 85% less energy and last far longer.', savings:12, pts:100},
-      {x:6, y:20, w:2, h:2, label:'Phone Chargers', danger:false, e:'ðŸ”Œ', chapter:'Energy Consumption & Cost',
-       situation:'Six chargers and adapters are left plugged in overnight with nothing charging. Best fix?', choices:['Use one switched power strip and turn it off','Unplug only the phone charger','Leave them â€” they use nothing'], goodIdx:0, gout:'A switched strip cuts all standby loads at once.', bout:'Adapters still sip power when idle; a single switch handles them all.', fact:'Always-plugged adapters are a classic source of vampire power.', savings:8, pts:100}
+      {x:6, y:20, w:2, h:2, label:'Phone Chargers', danger:false, e:'🔌', chapter:'Energy Consumption & Cost',
+       situation:'Six chargers and adapters are left plugged in overnight with nothing charging. Best fix?', choices:['Use one switched power strip and turn it off','Unplug only the phone charger','Leave them — they use nothing'], goodIdx:0, gout:'A switched strip cuts all standby loads at once.', bout:'Adapters still sip power when idle; a single switch handles them all.', fact:'Always-plugged adapters are a classic source of vampire power.', savings:8, pts:100}
     ]
   },
   // STAGE 2: THE GARDEN
   {
-    name: "The Garden", icon: "ðŸŒ³", bg: "#1e3321", startX: 5, startY: 8,
-    npc: { x:14, y:7, pose:'stand', facing:1, name:'Aisha', role:'Young Gardener', avatar:'ðŸ‘§',
+    name: "The Garden", icon: "🌳", bg: "#1e3321", startX: 5, startY: 8,
+    npc: { x:14, y:7, pose:'stand', facing:1, name:'Aisha', role:'Young Gardener', avatar:'👧',
       model:{skin:'#F3C9A0', skinHi:'#FBE0C4', hair:'#7A4B12', shirt:'#E26B8A', acc:'ponytail'},
-      greet:"Hi! I'm helping in the garden today. Quick â€” can you answer my energy riddle?",
+      greet:"Hi! I'm helping in the garden today. Quick — can you answer my energy riddle?",
       q:"When is it MOST efficient to run the garden sprinklers?",
       choices:['Early morning','Midday in full sun','It never matters'], goodIdx:0,
       gout:"Yes! Cool mornings mean less evaporation, so the pump works less.",
-      bout:"Midday sun evaporates most of the water â€” wasting both water and pump energy.",
+      bout:"Midday sun evaporates most of the water — wasting both water and pump energy.",
       fact:"Watering at cool hours saves water and the electricity used to pump it.", pts:150 },
     rooms: [
       {label:'Patio', x:1, y:1, w:10, h:10, rc:'#D8CCC0', pt:'check'},
@@ -735,12 +744,12 @@ var gameData = [
       {label:'Shed', x:1, y:12, w:10, h:12, rc:'#C2B2A3', pt:'lines'}
     ],
     furniture: [
-      {x:2,y:2,w:3,h:3,c:'#a09080', e:'ðŸª‘', lbl:'Table'},
-      {x:17,y:3,w:5,h:4,c:'#6BB4D6', e:'ðŸŠ', lbl:'Pool'},
-      {x:21,y:10,w:3,h:4,c:'#609040', e:'ðŸŒ²', lbl:'Tree'}, 
-      {x:15,y:17,w:6,h:4,c:'#609040', e:'ðŸŒ»', lbl:'Flowers'},
-      {x:2,y:19,w:4,h:3,c:'#807060', e:'ðŸ§°', lbl:'Tools'},
-      {x:21,y:18,w:2,h:2,c:'#8B6A45', e:'ðŸª‘', lbl:'Bench'}
+      {x:2,y:2,w:3,h:3,c:'#a09080', e:'🪑', lbl:'Table'},
+      {x:17,y:3,w:5,h:4,c:'#6BB4D6', e:'🏊', lbl:'Pool'},
+      {x:21,y:10,w:3,h:4,c:'#609040', e:'🌲', lbl:'Tree'}, 
+      {x:15,y:17,w:6,h:4,c:'#609040', e:'🌻', lbl:'Flowers'},
+      {x:2,y:19,w:4,h:3,c:'#807060', e:'🧰', lbl:'Tools'},
+      {x:21,y:18,w:2,h:2,c:'#8B6A45', e:'🪑', lbl:'Bench'}
     ],
     decor: [
       {kind:'plantcluster',x:2,y:7,w:2,h:2},
@@ -759,46 +768,46 @@ var gameData = [
       {kind:'cone',x:5,y:21,w:1,h:2}
     ],
     pets: [
-      { x: 13, y: 8, radius: 0.4, baseVx: 0.02, baseVy: 0.01, emoji: 'ðŸ¢' },
-      { x: 22, y: 18, radius: 0.4, baseVx: -0.06, baseVy: 0.06, emoji: 'ðŸ¦‹' }
+      { x: 13, y: 8, radius: 0.4, baseVx: 0.02, baseVy: 0.01, emoji: '🐢' },
+      { x: 22, y: 18, radius: 0.4, baseVx: -0.06, baseVy: 0.06, emoji: '🦋' }
     ],
     spots: [
-      {x:5, y:4, w:2, h:2, label:'Floodlights', danger:true, e:'ðŸ”¦', chapter:'Energy Efficiency & Conservation',
-       calc:{given:[['Old lamp','60 W'],['New LED','10 W'],['Formula','saved = old âˆ’ new']], ask:'Power SAVED by switching to LED?'},
-       situation:'A 60 W garden light is replaced with a 10 W LED. How much power is saved?', choices:['50 W','10 W','70 W'], goodIdx:0, gout:'60 W âˆ’ 10 W = 50 W saved.', bout:'Saving = old power âˆ’ new power: 60 âˆ’ 10.', fact:'Energy efficiency means getting the same light for far less power.', savings:20, pts:100},
-      {x:14, y:10, w:2, h:2, label:'Sprinklers', danger:false, e:'â›²', chapter:'Energy Efficiency & Conservation',
+      {x:5, y:4, w:2, h:2, label:'Floodlights', danger:true, e:'🔦', chapter:'Energy Efficiency & Conservation',
+       calc:{given:[['Old lamp','60 W'],['New LED','10 W'],['Formula','saved = old − new']], ask:'Power SAVED by switching to LED?'},
+       situation:'A 60 W garden light is replaced with a 10 W LED. How much power is saved?', choices:['50 W','10 W','70 W'], goodIdx:0, gout:'60 W − 10 W = 50 W saved.', bout:'Saving = old power − new power: 60 − 10.', fact:'Energy efficiency means getting the same light for far less power.', savings:20, pts:100},
+      {x:14, y:10, w:2, h:2, label:'Sprinklers', danger:false, e:'⛲', chapter:'Energy Efficiency & Conservation',
        situation:'The water pump and sprinklers run at noon, when most water evaporates. Most efficient fix?', choices:['Set a timer for early morning','Water more often at noon','Run the pump 24/7'], goodIdx:0, gout:'Watering at cool times means less waste, so the pump runs less.', bout:'Noon watering evaporates fast, wasting both water and pump energy.', fact:'Conservation = avoiding waste; efficiency = doing the same job with less.', savings:10, pts:100},
-      {x:5, y:16, w:2, h:2, label:'Electric Mower', danger:false, e:'ðŸ”Œ', chapter:'Energy Efficiency & Conservation',
+      {x:5, y:16, w:2, h:2, label:'Electric Mower', danger:false, e:'🔌', chapter:'Energy Efficiency & Conservation',
        situation:'The cordless mower is left on its charger 24/7 even when full. Best practice?', choices:['Unplug once fully charged','Keep it trickle-charging always','Charge a little every hour'], goodIdx:0, gout:'Unplugging when full avoids standby draw and protects the battery.', bout:'Constant trickle charging wastes energy and degrades the battery.', fact:'Switching off idle equipment is the simplest conservation habit.', savings:5, pts:100},
-      {x:22, y:5, w:2, h:2, label:'Pool Pump', danger:true, e:'âš™ï¸', chapter:'Energy Efficiency & Conservation',
-       situation:'The pool pump is running all day even when the water is clean. What helps most?', choices:['Use a timer so it runs only when needed','Leave it running all day','Block the water pipe'], goodIdx:0, gout:'A timer prevents unnecessary pump running while still keeping the water clean.', bout:'Running all day wastes energy, and blocking the pipe is unsafe.', fact:'Big motors like pumps rarely need to run all day â€” a timer saves a lot.', savings:40, pts:100},
-      {x:8, y:6, w:2, h:2, label:'Patio Heater', danger:false, e:'ðŸ”¥', chapter:'Energy Efficiency & Conservation',
-       situation:'An electric patio heater is left on heating an empty garden. The efficient move?', choices:['Switch it off when nobody is there','Turn it down to 50%','Leave it on for later'], goodIdx:0, gout:'Never heat an empty outdoor space â€” that energy is pure waste.', bout:'Even at 50% you are heating open air for no benefit.', fact:'Outdoor heaters lose heat instantly; using them only when needed is key.', savings:25, pts:100}
+      {x:22, y:5, w:2, h:2, label:'Pool Pump', danger:true, e:'⚙️', chapter:'Energy Efficiency & Conservation',
+       situation:'The pool pump is running all day even when the water is clean. What helps most?', choices:['Use a timer so it runs only when needed','Leave it running all day','Block the water pipe'], goodIdx:0, gout:'A timer prevents unnecessary pump running while still keeping the water clean.', bout:'Running all day wastes energy, and blocking the pipe is unsafe.', fact:'Big motors like pumps rarely need to run all day — a timer saves a lot.', savings:40, pts:100},
+      {x:8, y:6, w:2, h:2, label:'Patio Heater', danger:false, e:'🔥', chapter:'Energy Efficiency & Conservation',
+       situation:'An electric patio heater is left on heating an empty garden. The efficient move?', choices:['Switch it off when nobody is there','Turn it down to 50%','Leave it on for later'], goodIdx:0, gout:'Never heat an empty outdoor space — that energy is pure waste.', bout:'Even at 50% you are heating open air for no benefit.', fact:'Outdoor heaters lose heat instantly; using them only when needed is key.', savings:25, pts:100}
     ]
   },
   // STAGE 3: THE FACTORY
   {
-    name: "The Factory", icon: "ðŸ­", bg: "#2a2a35", startX: 12, startY: 11,
-    npc: { x:20, y:19, pose:'stand', facing:1, name:'Mr. Tan', role:'Factory Boss', avatar:'ðŸ§‘â€ðŸ’¼',
+    name: "The Factory", icon: "🏭", bg: "#2a2a35", startX: 12, startY: 11,
+    npc: { x:20, y:19, pose:'stand', facing:1, name:'Mr. Tan', role:'Factory Boss', avatar:'🧑‍💼',
       model:{skin:'#E0AC69', skinHi:'#F0C896', hair:'#2b2b2b', shirt:'#37475A', acc:'tie'},
       greet:"Ah, our energy inspector. Before you go, answer me this.",
       q:"Which of these is a RENEWABLE source of electricity?",
       choices:['Solar power','Coal','Diesel'], goodIdx:0,
       gout:"Correct. Solar is renewable; coal and diesel are finite fossil fuels.",
       bout:"Coal and diesel are fossil fuels. Solar is the renewable one.",
-      fact:"Renewables â€” solar, wind, hydro, biomass â€” don't run out and pollute far less.", pts:150 },
+      fact:"Renewables — solar, wind, hydro, biomass — don't run out and pollute far less.", pts:150 },
     rooms: [
       {label:'Assembly Line', x:1, y:1, w:23, h:12, rc:'#B0B0B5', pt:'lines'},
       {label:'Storage', x:1, y:14, w:11, h:10, rc:'#A0A0A5', pt:'check'},
       {label:'Manager Office', x:13, y:14, w:11, h:10, rc:'#C0C0C8', pt:'dots'}
     ],
     furniture: [
-      {x:2,y:3,w:8,h:3,c:'#707075', e:'âš™ï¸', lbl:'Machine A'},
-      {x:14,y:3,w:8,h:3,c:'#707075', e:'âš™ï¸', lbl:'Machine B'},
-      {x:2,y:15,w:3,h:3,c:'#808080', e:'ðŸ“¦', lbl:'Crates'},
-      {x:7,y:18,w:4,h:3,c:'#8A7A66', e:'ðŸ“¦', lbl:'Pallets'},
-      {x:14,y:18,w:4,h:3,c:'#D0D0D5', e:'ðŸ–¥ï¸', lbl:'Desk'},
-      {x:14,y:8,w:3,h:2,c:'#8A7A66', e:'ðŸ“¦', lbl:'Pallets'}
+      {x:2,y:3,w:8,h:3,c:'#707075', e:'⚙️', lbl:'Machine A'},
+      {x:14,y:3,w:8,h:3,c:'#707075', e:'⚙️', lbl:'Machine B'},
+      {x:2,y:15,w:3,h:3,c:'#808080', e:'📦', lbl:'Crates'},
+      {x:7,y:18,w:4,h:3,c:'#8A7A66', e:'📦', lbl:'Pallets'},
+      {x:14,y:18,w:4,h:3,c:'#D0D0D5', e:'🖥️', lbl:'Desk'},
+      {x:14,y:8,w:3,h:2,c:'#8A7A66', e:'📦', lbl:'Pallets'}
     ],
     decor: [
       {kind:'pipe',x:3,y:1,w:5,h:1,dir:'h'},
@@ -819,32 +828,32 @@ var gameData = [
       {kind:'rug',x:14,y:21,w:3,h:2,c1:'#33485F',c2:'#9AA8E0'}
     ],
     pets: [
-      { x: 10, y: 5, radius: 0.4, baseVx: 0.06, baseVy: 0.02, emoji: 'ðŸ¦' },
-      { x: 5, y: 18, radius: 0.4, baseVx: -0.07, baseVy: 0.04, emoji: 'ðŸ' }
+      { x: 10, y: 5, radius: 0.4, baseVx: 0.06, baseVy: 0.02, emoji: '🐦' },
+      { x: 5, y: 18, radius: 0.4, baseVx: -0.07, baseVy: 0.04, emoji: '🐁' }
     ],
     spots: [
-      {x:3, y:9, w:2, h:2, label:'Coal Boiler', danger:false, e:'ðŸ”¥', chapter:'Electricity Sources',
-       situation:'The plant runs on a coal boiler. Put the coal power chain in the right order.', choices:['Coal burns â†’ heats water to steam â†’ steam spins turbine â†’ generator makes electricity','Coal burns â†’ generator â†’ turbine â†’ steam','Coal â†’ solar panel â†’ battery â†’ electricity'], goodIdx:0, gout:'Correct! Burning coal heats water into steam, which spins a turbine connected to a generator.', bout:'The turbine must spin the generator; steam comes before the turbine, not after.', fact:'Coal, gas and oil are conventional (fossil) sources that work by direct combustion.', savings:80, pts:100},
-      {x:11, y:8, w:2, h:2, label:'Air Compressor', danger:true, e:'ðŸ’¨', chapter:'Electricity Sources',
+      {x:3, y:9, w:2, h:2, label:'Coal Boiler', danger:false, e:'🔥', chapter:'Electricity Sources',
+       situation:'The plant runs on a coal boiler. Put the coal power chain in the right order.', choices:['Coal burns → heats water to steam → steam spins turbine → generator makes electricity','Coal burns → generator → turbine → steam','Coal → solar panel → battery → electricity'], goodIdx:0, gout:'Correct! Burning coal heats water into steam, which spins a turbine connected to a generator.', bout:'The turbine must spin the generator; steam comes before the turbine, not after.', fact:'Coal, gas and oil are conventional (fossil) sources that work by direct combustion.', savings:80, pts:100},
+      {x:11, y:8, w:2, h:2, label:'Air Compressor', danger:true, e:'💨', chapter:'Electricity Sources',
        situation:'The factory wants a cleaner electricity source. Which of these is RENEWABLE?', choices:['Solar power','Natural gas','Diesel'], goodIdx:0, gout:'Solar is renewable; gas and diesel are fossil fuels.', bout:'Natural gas and diesel are conventional fossil fuels, not renewable.', fact:'Renewable sources: hydro, wind, biomass, solar. Conventional: coal, gas, oil, nuclear.', savings:80, pts:100},
-      {x:20, y:9, w:2, h:2, label:'Backup Generator', danger:true, e:'ðŸ›¢ï¸', chapter:'Electricity Sources',
-       calc:{given:[['Generator output','2 kW'],['Run time','3 h/day'],['Formula','kWh = kW Ã— h']], ask:'Daily energy produced by the diesel generator?'},
-       situation:'A 2 kW diesel backup generator runs 3 hours a day. How much energy does it produce daily?', choices:['6 kWh/day','5 kWh/day','23 kWh/day'], goodIdx:0, gout:'2 kW Ã— 3 h = 6 kWh/day.', bout:'Multiply power by hours: 2 Ã— 3.', fact:'Diesel generators are a conventional, high-emission source â€” useful as backup but costly to run.', savings:90, pts:100},
-      {x:20, y:16, w:2, h:2, label:'Solar Inverter', danger:false, e:'â˜€ï¸', chapter:'Electricity Sources',
-       situation:'Rooftop solar panels feed a solar inverter. What does the inverter actually do?', choices:['Converts panel DC into usable AC electricity','Burns fuel to make heat','Stores coal for later'], goodIdx:0, gout:'Right â€” panels make DC, the inverter turns it into AC the factory can use.', bout:'Solar is combustion-free; the inverter just converts DC to AC.', fact:'Solar PV is the fastest-growing renewable source worldwide.', savings:30, pts:100},
-      {x:6, y:16, w:2, h:2, label:'High Bay Lights', danger:true, e:'ðŸ’¡', chapter:'Electricity Sources',
-       situation:'Management debates fossil vs renewable supply. Which is a TRUE advantage of fossil-fuel electricity?', choices:['Reliable output regardless of weather','Produces no emissions','Is an unlimited resource'], goodIdx:0, gout:'Fossil plants give steady output any time â€” that reliability is their main strength.', bout:'Fossil fuels do emit greenhouse gases and are finite, so those cannot be advantages.', fact:'Fossil fuels are reliable but polluting and finite; renewables are clean but variable.', savings:120, pts:100}
+      {x:20, y:9, w:2, h:2, label:'Backup Generator', danger:true, e:'🛢️', chapter:'Electricity Sources',
+       calc:{given:[['Generator output','2 kW'],['Run time','3 h/day'],['Formula','kWh = kW × h']], ask:'Daily energy produced by the diesel generator?'},
+       situation:'A 2 kW diesel backup generator runs 3 hours a day. How much energy does it produce daily?', choices:['6 kWh/day','5 kWh/day','23 kWh/day'], goodIdx:0, gout:'2 kW × 3 h = 6 kWh/day.', bout:'Multiply power by hours: 2 × 3.', fact:'Diesel generators are a conventional, high-emission source — useful as backup but costly to run.', savings:90, pts:100},
+      {x:20, y:16, w:2, h:2, label:'Solar Inverter', danger:false, e:'☀️', chapter:'Electricity Sources',
+       situation:'Rooftop solar panels feed a solar inverter. What does the inverter actually do?', choices:['Converts panel DC into usable AC electricity','Burns fuel to make heat','Stores coal for later'], goodIdx:0, gout:'Right — panels make DC, the inverter turns it into AC the factory can use.', bout:'Solar is combustion-free; the inverter just converts DC to AC.', fact:'Solar PV is the fastest-growing renewable source worldwide.', savings:30, pts:100},
+      {x:6, y:16, w:2, h:2, label:'High Bay Lights', danger:true, e:'💡', chapter:'Electricity Sources',
+       situation:'Management debates fossil vs renewable supply. Which is a TRUE advantage of fossil-fuel electricity?', choices:['Reliable output regardless of weather','Produces no emissions','Is an unlimited resource'], goodIdx:0, gout:'Fossil plants give steady output any time — that reliability is their main strength.', bout:'Fossil fuels do emit greenhouse gases and are finite, so those cannot be advantages.', fact:'Fossil fuels are reliable but polluting and finite; renewables are clean but variable.', savings:120, pts:100}
     ]
   },
   // STAGE 4: THE OFFICE
   {
-    name: "The Office", icon: "ðŸ¢", bg: "#303a45", startX: 10, startY: 10,
-    npc: { x:19, y:17.4, pose:'sit', facing:1, name:'Sam', role:'Colleague', avatar:'ðŸ§‘',
+    name: "The Office", icon: "🏢", bg: "#303a45", startX: 10, startY: 10,
+    npc: { x:19, y:17.4, pose:'sit', facing:1, name:'Sam', role:'Colleague', avatar:'🧑',
       model:{skin:'#C68642', skinHi:'#DBA46A', hair:'#1a1a1a', shirt:'#1D9E75', acc:'lanyard'},
       greet:"Hey! Taking a break? Settle a debate we had at lunch.",
-      q:"An office PC left on all night mostly wastes energy becauseâ€¦",
+      q:"An office PC left on all night mostly wastes energy because…",
       choices:['It draws power for hours doing nothing','It charges itself up','It saves boot time worth the cost'], goodIdx:0,
-      gout:"Exactly â€” hours of idle power with zero benefit. Sleep or shut it down.",
+      gout:"Exactly — hours of idle power with zero benefit. Sleep or shut it down.",
       bout:"It just burns power overnight for nothing. Sleep mode and shutdowns fix it.",
       fact:"Enabling sleep and shutting down after hours cuts a big slice of office bills.", pts:150 },
     rooms: [
@@ -854,14 +863,14 @@ var gameData = [
       {label:'Hallway', x:1, y:17, w:15, h:7, rc:'#D0D5D8', pt:'dots'}
     ],
     furniture: [
-      {x:2,y:3,w:4,h:4,c:'#C0C5C8', e:'ðŸ’»', lbl:'Desk 1'},
-      {x:8,y:3,w:4,h:4,c:'#C0C5C8', e:'ðŸ’»', lbl:'Desk 2'},
-      {x:8,y:9,w:4,h:3,c:'#7C2D3A', e:'ðŸŸ¥', lbl:'Rug', noCollide:true},
-      {x:19,y:6,w:3,h:2,c:'#8B5A38', e:'ðŸª‘', lbl:'Meeting Table'},
-      {x:18,y:17,w:4,h:2,c:'#C66459', e:'ðŸ›‹ï¸', lbl:'Sofa'},
-      {x:18,y:14,w:3,h:2,c:'#D0CACA', e:'â˜•', lbl:'Counter'},
-      {x:10,y:19,w:3,h:3,c:'#7D8A99', e:'ðŸ—„ï¸', lbl:'Utility Cabinet'},
-      {x:3,y:11,w:3,h:2,c:'#C0C5C8', e:'ðŸ’»', lbl:'Desk 3'}
+      {x:2,y:3,w:4,h:4,c:'#C0C5C8', e:'💻', lbl:'Desk 1'},
+      {x:8,y:3,w:4,h:4,c:'#C0C5C8', e:'💻', lbl:'Desk 2'},
+      {x:8,y:9,w:4,h:3,c:'#7C2D3A', e:'🟥', lbl:'Rug', noCollide:true},
+      {x:19,y:6,w:3,h:2,c:'#8B5A38', e:'🪑', lbl:'Meeting Table'},
+      {x:18,y:17,w:4,h:2,c:'#C66459', e:'🛋️', lbl:'Sofa'},
+      {x:18,y:14,w:3,h:2,c:'#D0CACA', e:'☕', lbl:'Counter'},
+      {x:10,y:19,w:3,h:3,c:'#7D8A99', e:'🗄️', lbl:'Utility Cabinet'},
+      {x:3,y:11,w:3,h:2,c:'#C0C5C8', e:'💻', lbl:'Desk 3'}
     ],
     decor: [
       {kind:'window',x:5,y:1,w:2,h:1},
@@ -880,33 +889,33 @@ var gameData = [
       {kind:'rug',x:6,y:20,w:3,h:2,c1:'#2E6B5A',c2:'#E0C36A'}
     ],
     pets: [
-      { x: 5, y: 10, radius: 0.4, baseVx: 0.04, baseVy: 0.04, emoji: 'ðŸ¦®' },
-      { x: 22, y: 18, radius: 0.4, baseVx: -0.05, baseVy: 0.05, emoji: 'ðŸ¤–' }
+      { x: 5, y: 10, radius: 0.4, baseVx: 0.04, baseVy: 0.04, emoji: '🦮' },
+      { x: 22, y: 18, radius: 0.4, baseVx: -0.05, baseVy: 0.05, emoji: '🤖' }
     ],
     spots: [
-      {x:13, y:20, w:2, h:2, label:'Smart Meter', danger:true, e:'ðŸ“Ÿ', chapter:'Smart Meters & Tariff',
-       calc:{given:[['Last reading','100 kWh'],['This reading','140 kWh'],['Formula','used = new âˆ’ old']], ask:'How many kWh were used?'},
-       situation:'The office smart meter read 100 kWh before and 140 kWh now. How much energy was used?', choices:['40 kWh','240 kWh','140 kWh'], goodIdx:0, gout:'Used = 140 âˆ’ 100 = 40 kWh.', bout:'Subtract the old reading from the new one: 140 âˆ’ 100.', fact:'A smart meter records usage automatically and sends it to TNB for accurate billing.', savings:45, pts:100},
-      {x:19, y:2, w:3, h:2, label:'Meeting Room', danger:false, e:'ðŸ’¡', chapter:'Smart Meters & Tariff',
+      {x:13, y:20, w:2, h:2, label:'Smart Meter', danger:true, e:'📟', chapter:'Smart Meters & Tariff',
+       calc:{given:[['Last reading','100 kWh'],['This reading','140 kWh'],['Formula','used = new − old']], ask:'How many kWh were used?'},
+       situation:'The office smart meter read 100 kWh before and 140 kWh now. How much energy was used?', choices:['40 kWh','240 kWh','140 kWh'], goodIdx:0, gout:'Used = 140 − 100 = 40 kWh.', bout:'Subtract the old reading from the new one: 140 − 100.', fact:'A smart meter records usage automatically and sends it to TNB for accurate billing.', savings:45, pts:100},
+      {x:19, y:2, w:3, h:2, label:'Meeting Room', danger:false, e:'💡', chapter:'Smart Meters & Tariff',
        situation:'How is a smart meter different from a traditional meter?', choices:['It sends readings to the utility automatically in near real-time','It uses no electricity at all','It only works during the day'], goodIdx:0, gout:'Smart meters communicate digitally with the utility, giving accurate near real-time data.', bout:'Both meters measure usage; the smart one differs by communicating remotely.', fact:'Malaysia (TNB) is rolling out smart meters; you can track usage in the myTNB app.', savings:35, pts:100},
-      {x:4, y:5, w:2, h:2, label:'Office PCs', danger:true, e:'ðŸ–¥ï¸', chapter:'Smart Meters & Tariff',
+      {x:4, y:5, w:2, h:2, label:'Office PCs', danger:true, e:'🖥️', chapter:'Smart Meters & Tariff',
        situation:'Several office PCs stay fully on overnight. What is the best simple fix?', choices:['Enable sleep mode and shut them down after work','Leave every screen on','Switch off the smart meter'], goodIdx:0, gout:'Sleep mode and shutdowns cut after-hours electricity use.', bout:'Screens and PCs still use power when left on; the meter should never be switched off.', fact:'Smart meter data helps spot exactly this kind of after-hours waste.', savings:55, pts:100},
-      {x:19, y:20, w:2, h:2, label:'Vending Machine', danger:false, e:'ðŸ¥¤', chapter:'Smart Meters & Tariff',
-       situation:'The bill spiked and the smart meter shows heavy overnight use. The likely culprit is the vending machine. Best response?', choices:['Fit a sensor so it powers down when idle at night','Ignore it â€” meters are always wrong','Unplug it and lose all the stock'], goodIdx:0, gout:'A sensor cuts needless overnight running â€” exactly what the meter data revealed.', bout:'Smart meter data is accurate; unplugging spoils the stock.', fact:'Smart meters turn vague bills into clear data you can act on.', savings:30, pts:100},
-      {x:5, y:19, w:2, h:2, label:'Server Rack', danger:true, e:'ðŸ—„ï¸', chapter:'Smart Meters & Tariff',
-       situation:'A small server rack runs 24/7. Using tariff billing, how do you cut its cost?', choices:['Consolidate to fewer machines and enable power management','Run more servers to share the load','Switch the meter off at night'], goodIdx:0, gout:'Fewer, power-managed machines lower the kWh that gets billed.', bout:'You cannot switch off the meter; adding servers raises the bill.', fact:'Every kWh saved is billed at the tariff rate â€” cutting usage cuts cost directly.', savings:20, pts:100}
+      {x:19, y:20, w:2, h:2, label:'Vending Machine', danger:false, e:'🥤', chapter:'Smart Meters & Tariff',
+       situation:'The bill spiked and the smart meter shows heavy overnight use. The likely culprit is the vending machine. Best response?', choices:['Fit a sensor so it powers down when idle at night','Ignore it — meters are always wrong','Unplug it and lose all the stock'], goodIdx:0, gout:'A sensor cuts needless overnight running — exactly what the meter data revealed.', bout:'Smart meter data is accurate; unplugging spoils the stock.', fact:'Smart meters turn vague bills into clear data you can act on.', savings:30, pts:100},
+      {x:5, y:19, w:2, h:2, label:'Server Rack', danger:true, e:'🗄️', chapter:'Smart Meters & Tariff',
+       situation:'A small server rack runs 24/7. Using tariff billing, how do you cut its cost?', choices:['Consolidate to fewer machines and enable power management','Run more servers to share the load','Switch the meter off at night'], goodIdx:0, gout:'Fewer, power-managed machines lower the kWh that gets billed.', bout:'You cannot switch off the meter; adding servers raises the bill.', fact:'Every kWh saved is billed at the tariff rate — cutting usage cuts cost directly.', savings:20, pts:100}
     ]
   },
   // STAGE 5: THE CITY PARK
   {
-    name: "The City Park", icon: "â›²", bg: "#152515", startX: 12, startY: 5,
-    npc: { x:15, y:3.4, pose:'sit', facing:1, name:'Pak Din', role:'Park Visitor', avatar:'ðŸ§”',
+    name: "The City Park", icon: "⛲", bg: "#152515", startX: 12, startY: 5,
+    npc: { x:15, y:3.4, pose:'sit', facing:1, name:'Pak Din', role:'Park Visitor', avatar:'🧔',
       model:{skin:'#F1C27D', skinHi:'#FBDBA8', hair:'#3a2a18', shirt:'#EF9F27', acc:'cap', cap:'#185FA5'},
-      greet:"Lovely park, isn't it? You look sharp â€” try this one.",
+      greet:"Lovely park, isn't it? You look sharp — try this one.",
       q:"What does the term 'energy mix' mean?",
       choices:['The blend of different sources supplying electricity','One single fuel for everything','Only imported energy'], goodIdx:0,
-      gout:"Spot on â€” it's the combination of sources like solar, hydro, gas and coal.",
-      bout:"It isn't one fuel â€” it's the blend of sources that together supply power.",
+      gout:"Spot on — it's the combination of sources like solar, hydro, gas and coal.",
+      bout:"It isn't one fuel — it's the blend of sources that together supply power.",
       fact:"A balanced energy mix improves security against price and supply shocks.", pts:150 },
     rooms: [
       {label:'Walkway', x:1, y:1, w:23, h:8, rc:'#B5A595', pt:'check'},
@@ -914,12 +923,12 @@ var gameData = [
       {label:'Gazebo', x:17, y:12, w:7, h:10, rc:'#D5C5B5', pt:'lines'}
     ],
     furniture: [
-      {x:5,y:3,w:3,h:2,c:'#958575', e:'ðŸª‘', lbl:'Bench'},
-      {x:14,y:3,w:3,h:2,c:'#958575', e:'ðŸª‘', lbl:'Bench'},
-      {x:10,y:18,w:5,h:5,c:'#6595B5', e:'ðŸ’§', lbl:'Water'},
-      {x:1,y:18,w:4,h:4,c:'#609040', e:'ðŸŒ²', lbl:'Tree'},
-      {x:19,y:15,w:3,h:3,c:'#B5A595', e:'ðŸ›–', lbl:'Table'},
-      {x:5,y:13,w:3,h:2,c:'#958575', e:'ðŸª‘', lbl:'Bench'}
+      {x:5,y:3,w:3,h:2,c:'#958575', e:'🪑', lbl:'Bench'},
+      {x:14,y:3,w:3,h:2,c:'#958575', e:'🪑', lbl:'Bench'},
+      {x:10,y:18,w:5,h:5,c:'#6595B5', e:'💧', lbl:'Water'},
+      {x:1,y:18,w:4,h:4,c:'#609040', e:'🌲', lbl:'Tree'},
+      {x:19,y:15,w:3,h:3,c:'#B5A595', e:'🛖', lbl:'Table'},
+      {x:5,y:13,w:3,h:2,c:'#958575', e:'🪑', lbl:'Bench'}
     ],
     decor: [
       {kind:'lamppost',x:8,y:2,w:1,h:3},
@@ -940,21 +949,21 @@ var gameData = [
       {kind:'rug',x:19,y:19,w:3,h:2,c1:'#7C5A3B',c2:'#E0C36A'}
     ],
     pets: [
-      { x: 8, y: 16, radius: 0.4, baseVx: 0.04, baseVy: 0.02, emoji: 'ðŸ¦†' },
-      { x: 6, y: 20, radius: 0.4, baseVx: -0.06, baseVy: 0.05, emoji: 'ðŸ¸' }
+      { x: 8, y: 16, radius: 0.4, baseVx: 0.04, baseVy: 0.02, emoji: '🦆' },
+      { x: 6, y: 20, radius: 0.4, baseVx: -0.06, baseVy: 0.05, emoji: '🐸' }
     ],
     spots: [
-      {x:10, y:4, w:2, h:2, label:'Solar Streetlights', danger:false, e:'ðŸ’¡', chapter:'Energy Mix',
-       situation:'The park adds solar-powered streetlights to its energy mix. In an "energy mix", what does that term mean?', choices:['The combination of different energy sources supplying power','A single fuel powering everything','Only the imported energy'], goodIdx:0, gout:'An energy mix is the blend of sources (coal, gas, hydro, solarâ€¦) that supply electricity.', bout:'No country relies on just one source; a mix gives security and stability.', fact:'A balanced mix protects against price spikes if one source becomes scarce.', savings:50, pts:100},
-      {x:18, y:6, w:2, h:2, label:'Grid Supply', danger:true, e:'ðŸ”Œ', chapter:'Energy Mix',
-       calc:{given:[['Total energy mix','100 parts'],['Solar','10 parts'],['Formula','share = part Ã· total']], ask:'Solar\'s % share of the total mix?'},
+      {x:10, y:4, w:2, h:2, label:'Solar Streetlights', danger:false, e:'💡', chapter:'Energy Mix',
+       situation:'The park adds solar-powered streetlights to its energy mix. In an "energy mix", what does that term mean?', choices:['The combination of different energy sources supplying power','A single fuel powering everything','Only the imported energy'], goodIdx:0, gout:'An energy mix is the blend of sources (coal, gas, hydro, solar…) that supply electricity.', bout:'No country relies on just one source; a mix gives security and stability.', fact:'A balanced mix protects against price spikes if one source becomes scarce.', savings:50, pts:100},
+      {x:18, y:6, w:2, h:2, label:'Grid Supply', danger:true, e:'🔌', chapter:'Energy Mix',
+       calc:{given:[['Total energy mix','100 parts'],['Solar','10 parts'],['Formula','share = part ÷ total']], ask:'Solar\'s % share of the total mix?'},
        situation:'The park grid mix has 100 parts of energy. Solar provides 10 parts. What percent comes from solar?', choices:['10%','50%','90%'], goodIdx:0, gout:'10 out of 100 parts is 10%.', bout:'Percent means parts out of 100. Solar is 10 out of 100.', fact:'% contribution shows how much each source adds to the overall mix.', savings:60, pts:100},
-      {x:2, y:5, w:2, h:2, label:'Solar Carport', danger:true, e:'â˜€ï¸', chapter:'Energy Mix',
+      {x:2, y:5, w:2, h:2, label:'Solar Carport', danger:true, e:'☀️', chapter:'Energy Mix',
        situation:'The carport roof has solar panels. Which statement is true?', choices:['Solar is a renewable energy source','Solar is a fossil fuel','Solar only works by burning diesel'], goodIdx:0, gout:'Solar is renewable because sunlight is naturally replenished.', bout:'Solar panels use sunlight; they do not burn fossil fuels.', fact:'Hydro, solar, wind and biomass are renewable; coal and gas are fossil.', savings:40, pts:100},
-      {x:20, y:13, w:2, h:2, label:'Public Fridge', danger:false, e:'ðŸ§Š', chapter:'Energy Mix',
-       situation:'Electricity is called an "energy currency". Why?', choices:['It is generated from primary sources, then distributed for any use','It is a primary energy source on its own','It can only power fridges'], goodIdx:0, gout:'Like money, electricity is produced from coal, gas, hydro or solar, then used flexibly.', bout:'Electricity is not a primary source â€” it is made from other sources.', fact:'Electricity is the most versatile form of energy, hence "energy currency".', savings:30, pts:100},
-      {x:21, y:4, w:2, h:2, label:'Recycling Point', danger:true, e:'â™»ï¸', chapter:'Energy Mix',
-       situation:'A country imports much of its coal and gas. What risk does high import dependence create in its energy mix?', choices:['Vulnerability to global price and supply shocks','Guaranteed cheaper electricity forever','It removes the need for renewables'], goodIdx:0, gout:'Relying on imports exposes a country to world price swings and supply risk.', bout:'Imports do not guarantee low prices, and they raise â€” not remove â€” the case for local renewables.', fact:'A mix of domestic and imported energy, including renewables, improves energy security.', savings:80, pts:100}
+      {x:20, y:13, w:2, h:2, label:'Public Fridge', danger:false, e:'🧊', chapter:'Energy Mix',
+       situation:'Electricity is called an "energy currency". Why?', choices:['It is generated from primary sources, then distributed for any use','It is a primary energy source on its own','It can only power fridges'], goodIdx:0, gout:'Like money, electricity is produced from coal, gas, hydro or solar, then used flexibly.', bout:'Electricity is not a primary source — it is made from other sources.', fact:'Electricity is the most versatile form of energy, hence "energy currency".', savings:30, pts:100},
+      {x:21, y:4, w:2, h:2, label:'Recycling Point', danger:true, e:'♻️', chapter:'Energy Mix',
+       situation:'A country imports much of its coal and gas. What risk does high import dependence create in its energy mix?', choices:['Vulnerability to global price and supply shocks','Guaranteed cheaper electricity forever','It removes the need for renewables'], goodIdx:0, gout:'Relying on imports exposes a country to world price swings and supply risk.', bout:'Imports do not guarantee low prices, and they raise — not remove — the case for local renewables.', fact:'A mix of domestic and imported energy, including renewables, improves energy security.', savings:80, pts:100}
     ]
   }
 ];
@@ -962,20 +971,20 @@ var gameData = [
 // Custom Furniture Dialogue Responses (arrays = random variety)
 var furnMsgs = {
   'Sofa': ['You sink into the sofa. So comfy you almost doze off!', 'You fluff a cushion and lean back. Pure relaxation.'],
-  'TV': ['You catch a few minutes of a nature documentary. Lovely!', 'A game show is on. You guess the answer correctly!', 'You flick through channels â€” nothing but reruns.'],
+  'TV': ['You catch a few minutes of a nature documentary. Lovely!', 'A game show is on. You guess the answer correctly!', 'You flick through channels — nothing but reruns.'],
   'Stove': ['You admire the spotless stove. Something delicious was cooked here.', 'The pots are scrubbed and ready for the next meal.'],
   'Bed': ['You flop onto the bed. So cozy you could nap for hours!', 'You straighten the blanket and fluff the pillow.'],
   'Desk': ['You tidy the desk and square up a stack of papers.', 'You doodle a tiny lightbulb on a sticky note.'],
   'Table': ['You sit at the table. Sturdy, polished, and clean.', 'You tap a little rhythm on the tabletop.'],
   'Meeting Table': ['The meeting table is set for a quick team huddle.', 'Someone left a marker and a half-erased agenda here.'],
   'Tree': ['You stand under the tree and breathe the cool, fresh air.', 'A leaf spirals down and lands on your shoulder.'],
-  'Flowers': ['You lean in and smell the flowers â€” heavenly!', 'Bees hum happily among the bright blooms.'],
+  'Flowers': ['You lean in and smell the flowers — heavenly!', 'Bees hum happily among the bright blooms.'],
   'Pool': ['The pool water is crystal clear, pump humming nearby.', 'Sunlight dances on the rippling surface.'],
-  'Tools': ['You inspect the tools. Every wrench in its place.', 'A well-organized toolbox â€” a tinkerer\'s dream.'],
+  'Tools': ['You inspect the tools. Every wrench in its place.', 'A well-organized toolbox — a tinkerer\'s dream.'],
   'Machine A': ['Machine A hums along smoothly. All gauges green.', 'You give Machine A a friendly pat. Solid as ever.'],
   'Machine B': ['Machine B\'s gears turn in perfect rhythm.', 'A soft whirr tells you Machine B is happy.'],
-  'Crates': ['Just some heavy wooden crates, stacked tight.', 'You knock on a crate â€” sounds full of parts.'],
-  'Pallets': ['The pallets are stacked neatly in storage.', 'Shrink-wrapped and labeled â€” very tidy.'],
+  'Crates': ['Just some heavy wooden crates, stacked tight.', 'You knock on a crate — sounds full of parts.'],
+  'Pallets': ['The pallets are stacked neatly in storage.', 'Shrink-wrapped and labeled — very tidy.'],
   'Desk 1': ['A tidy workspace, ready for a productive day.', 'A little succulent sits by the monitor.'],
   'Desk 2': ['Someone left a neat stack of files here.', 'A coffee ring marks yesterday\'s late shift.'],
   'Utility Cabinet': ['Spare cables and labels are neatly stored inside.', 'Everything is coiled, tagged, and ready.'],
@@ -991,22 +1000,22 @@ function svgDataUri(svg) {
 
 // Generic display names + species/breed "model" labels for the animals.
 var animalInfo = {
-  'ðŸˆ': { species: 'Cat',     model: 'Tabby',            names: ['Whiskers','Mochi','Tiger','Luna'] },
-  'ðŸ•': { species: 'Dog',     model: 'Mixed Breed',      names: ['Buddy','Rocky','Bella','Max'] },
-  'ðŸ¦®': { species: 'Dog',     model: 'Guide Retriever',  names: ['Scout','Cooper','Daisy','Ranger'] },
-  'ðŸ¢': { species: 'Tortoise',model: 'Garden Tortoise',  names: ['Shelly','Speedy','Pokey','Tank'] },
-  'ðŸ¦‹': { species: 'Butterfly',model: 'Monarch',         names: ['Flutter','Sunny','Iris','Pip'] },
-  'ðŸ¦': { species: 'Bird',    model: 'Songbird',         names: ['Pip','Sky','Robin','Echo'] },
-  'ðŸ': { species: 'Mouse',   model: 'House Mouse',      names: ['Squeak','Nibbles','Gus','Pip'] },
-  'ðŸ¤–': { species: 'Robot',   model: 'Office Bot v2',    names: ['Beep','Circuit','Bolt','Chip'] },
-  'ðŸ¦†': { species: 'Duck',    model: 'Mallard',          names: ['Quackers','Puddles','Waddle','Pip'] },
-  'ðŸ¸': { species: 'Frog',    model: 'Pond Frog',        names: ['Hopper','Lily','Croak','Pip'] }
+  '🐈': { species: 'Cat',     model: 'Tabby',            names: ['Whiskers','Mochi','Tiger','Luna'] },
+  '🐕': { species: 'Dog',     model: 'Mixed Breed',      names: ['Buddy','Rocky','Bella','Max'] },
+  '🦮': { species: 'Dog',     model: 'Guide Retriever',  names: ['Scout','Cooper','Daisy','Ranger'] },
+  '🐢': { species: 'Tortoise',model: 'Garden Tortoise',  names: ['Shelly','Speedy','Pokey','Tank'] },
+  '🦋': { species: 'Butterfly',model: 'Monarch',         names: ['Flutter','Sunny','Iris','Pip'] },
+  '🐦': { species: 'Bird',    model: 'Songbird',         names: ['Pip','Sky','Robin','Echo'] },
+  '🐁': { species: 'Mouse',   model: 'House Mouse',      names: ['Squeak','Nibbles','Gus','Pip'] },
+  '🤖': { species: 'Robot',   model: 'Office Bot v2',    names: ['Beep','Circuit','Bolt','Chip'] },
+  '🦆': { species: 'Duck',    model: 'Mallard',          names: ['Quackers','Puddles','Waddle','Pip'] },
+  '🐸': { species: 'Frog',    model: 'Pond Frog',        names: ['Hopper','Lily','Croak','Pip'] }
 };
 function makeAnimalLabel(emoji) {
   var info = animalInfo[emoji];
-  if (!info) return { name: 'Critter', species: 'Animal', model: 'Wild', label: 'Critter Â· Animal' };
+  if (!info) return { name: 'Critter', species: 'Animal', model: 'Wild', label: 'Critter · Animal' };
   var name = info.names[Math.floor(Math.random() * info.names.length)];
-  return { name: name, species: info.species, model: info.model, label: name + ' Â· ' + info.species + ' (' + info.model + ')' };
+  return { name: name, species: info.species, model: info.model, label: name + ' · ' + info.species + ' (' + info.model + ')' };
 }
 
 function makeVisualCard(title, subtitle, body, opts) {
@@ -1272,7 +1281,7 @@ var spotVisualLibrary = {
     '<circle cx="110" cy="200" r="14" fill="#111827"/><circle cx="210" cy="200" r="14" fill="#111827"/>' +
     '<rect x="150" y="86" width="16" height="36" rx="4" fill="#6B7280"/>' +
     '<g fill="#9CA3AF" opacity="0.75"><circle cx="158" cy="80" r="10"/><circle cx="170" cy="68" r="8"/></g>' +
-    '<text x="130" y="162" font-family="Arial" font-size="20" font-weight="800" fill="#1F2937">âš¡</text>',
+    '<text x="130" y="162" font-family="Arial" font-size="20" font-weight="800" fill="#1F2937">⚡</text>',
     {top:'#EEF2F7', bottom:'#D9E0E7', accent:'#6B7280'}),
   solar: makeVisualCard('Solar / Inverter', 'Clean renewable power',
     '<rect x="78" y="92" width="120" height="80" rx="8" fill="#1E3A8A" stroke="#1E40AF" stroke-width="5" transform="skewX(-8)"/>' +
@@ -1383,7 +1392,7 @@ var spotPhotoFiles = {
   'Smart Meter': 'Itron_OpenWay_Electricity_Meter_with_Two-Way_Communications.JPG',
   'Meeting Room': 'Conferenceroom2.JPG',
   'Office PCs': 'ThinkCentre_S50.jpg',
-  'Vending Machine': 'HK_Sunday_night_West_Kln_Promenade_Food_Vending_Machine_å°é£Ÿ_01.JPG',
+  'Vending Machine': 'HK_Sunday_night_West_Kln_Promenade_Food_Vending_Machine_小食_01.JPG',
   'Server Rack': 'Cern_datacenter.jpg',
   'Solar Streetlights': 'Solar_lamp,_Victoria,_British_Columbia,_Canada_03.jpg',
   'Grid Supply': '500kV_3-Phase_Transmission_Lines.png',
@@ -2082,9 +2091,9 @@ var decorKinds = {
 function drawDecorVisual(d) {
   var x = d.x * T, y = d.y * T, w = d.w * T, h = d.h * T;
   if (d.kind && decorKinds[d.kind]) { decorKinds[d.kind](x, y, w, h, d); return true; }
-  if (d.e === 'ðŸŒ¿') { drawPlantCluster(x, y, w, h); return true; }
-  if (d.e === 'ðŸŒ»') { drawFlowerBed(x, y, w, h); return true; }
-  if (d.e === 'ðŸª´') { drawPottedPlant(x, y, w, h); return true; }
+  if (d.e === '🌿') { drawPlantCluster(x, y, w, h); return true; }
+  if (d.e === '🌻') { drawFlowerBed(x, y, w, h); return true; }
+  if (d.e === '🪴') { drawPottedPlant(x, y, w, h); return true; }
   return false;
 }
 
@@ -2758,10 +2767,10 @@ function performKidAction(targetSpot) {
       if (Math.random() < 0.5) {
         targetSpot.broken = true; targetSpot.fixed = true; targetSpot.attempts = 2; stageFixedCount++;
         totalScore = Math.max(0, totalScore - 50);
-        setTempMsg("ðŸ’¥ The kid broke the " + targetSpot.label + "!", 300);
+        setTempMsg("💥 The kid broke the " + targetSpot.label + "!", 300);
         sfx.break();
       } else {
-        setTempMsg("ðŸ§’ The kid played with the " + targetSpot.label + " but it survived.", 240);
+        setTempMsg("🧒 The kid played with the " + targetSpot.label + " but it survived.", 240);
         sfx.pop();
       }
       actionTaken = true;
@@ -2770,15 +2779,15 @@ function performKidAction(targetSpot) {
     if (targetSpot.broken) {
       if (Math.random() < 0.5) {
         targetSpot.broken = false; targetSpot.fixed = false; targetSpot.attempts = 0; stageFixedCount--;
-        setTempMsg("âœ¨ The kid miraculously repaired the " + targetSpot.label + "!", 300);
+        setTempMsg("✨ The kid miraculously repaired the " + targetSpot.label + "!", 300);
         sfx.magic();
       } else {
-        setTempMsg("ðŸ§’ The kid tried to fix the " + targetSpot.label + " but failed.", 240);
+        setTempMsg("🧒 The kid tried to fix the " + targetSpot.label + " but failed.", 240);
         sfx.pop();
       }
       actionTaken = true;
     } else {
-      setTempMsg("ðŸ§’ The kid is admiring the " + targetSpot.label + ".", 240);
+      setTempMsg("🧒 The kid is admiring the " + targetSpot.label + ".", 240);
       sfx.pop();
       actionTaken = true;
     }
@@ -2795,7 +2804,7 @@ function performKidAction(targetSpot) {
     
     if (stageFixedCount >= 5) {
       gstate = 'challenge';
-      var html = '<div class="sheet-handle"></div><div class="sheet-title" style="color:#A32D2D">ðŸ’¥ Stage Ended by Kid!</div><div class="outcome-box outcome-bad">The mischievous kid broke your last device! You lost those points.</div>';
+      var html = '<div class="sheet-handle"></div><div class="sheet-title" style="color:#A32D2D">💥 Stage Ended by Kid!</div><div class="outcome-box outcome-bad">The mischievous kid broke your last device! You lost those points.</div>';
       if(currentStageIdx === gameData.length - 1) {
         html += stageExitPromptButtonHtml('btn-continue');
       } else {
@@ -2930,7 +2939,7 @@ function updatePhysics() {
 
     if (kid.state === 'leaving') {
        kid.active = false;
-       setTimeout(function(){ setTempMsg("ðŸƒ The neighbor kid went home.", 300); }, 1000);
+       setTimeout(function(){ setTempMsg("🏃 The neighbor kid went home.", 300); }, 1000);
     }
   }
 
@@ -2987,23 +2996,23 @@ function checkNear(){
     mb.textContent = 'Exit door open - walk through it to proceed!'; mb.className = 'highlight'; btnE.classList.remove('active');
   } else if (nearKid) {
     var kn = (kid.model && kid.model.name) ? kid.model.name : 'A neighbor kid';
-    mb.textContent = 'ðŸ‘‹ ' + kn + ' the neighbor kid is here! Tap E to talk to them!'; mb.className = 'highlight'; btnE.classList.add('active');
+    mb.textContent = '👋 ' + kn + ' the neighbor kid is here! Tap E to talk to them!'; mb.className = 'highlight'; btnE.classList.add('active');
   } else if (nearNpc) {
-    mb.textContent = 'ðŸ’¬ ' + nearNpc.name + ' (' + nearNpc.role + ') wants to chat â€” Tap E to talk!'; mb.className = 'highlight'; btnE.classList.add('active');
+    mb.textContent = '💬 ' + nearNpc.name + ' (' + nearNpc.role + ') wants to chat — Tap E to talk!'; mb.className = 'highlight'; btnE.classList.add('active');
   } else if(nearSpot){
-    mb.textContent = 'âš  ' + nearSpot.label + ' â€” Tap E to investigate!'; mb.className = 'danger'; btnE.classList.add('active');
+    mb.textContent = '⚠ ' + nearSpot.label + ' — Tap E to investigate!'; mb.className = 'danger'; btnE.classList.add('active');
   } else if (nearPet) {
-    mb.textContent = 'ðŸ¾ ' + nearPet.emoji + ' ' + (nearPet.name || nearPet.emoji) + ' is hanging around â€” Tap E to interact!'; mb.className = 'highlight'; btnE.classList.add('active');
+    mb.textContent = '🐾 ' + nearPet.emoji + ' ' + (nearPet.name || nearPet.emoji) + ' is hanging around — Tap E to interact!'; mb.className = 'highlight'; btnE.classList.add('active');
   } else if (nearFixedSpot && nearFixedSpot.label === 'Office PCs') {
-    mb.textContent = 'ðŸ–¥ï¸ Office PCs â€” Tap E to play on the PC!'; mb.className = 'highlight'; btnE.classList.add('active');
+    mb.textContent = '🖥️ Office PCs — Tap E to play on the PC!'; mb.className = 'highlight'; btnE.classList.add('active');
   } else if (nearFixedSpot) {
-    mb.textContent = 'âœ¨ ' + nearFixedSpot.label + ' â€” Tap E to view details!'; mb.className = 'highlight'; btnE.classList.add('active');
+    mb.textContent = '✨ ' + nearFixedSpot.label + ' — Tap E to view details!'; mb.className = 'highlight'; btnE.classList.add('active');
   } else if (nearFurn) {
     var activityMeta = getFurnitureActivityMeta(nearFurn);
     if (activityMeta) {
-      mb.textContent = nearFurn.lbl + ' â€” Tap E to ' + activityMeta.verb + '!'; mb.className = 'highlight';
+      mb.textContent = nearFurn.lbl + ' — Tap E to ' + activityMeta.verb + '!'; mb.className = 'highlight';
     } else {
-      mb.textContent = 'ðŸ›‹ï¸ ' + nearFurn.lbl + ' â€” Tap E to interact!'; mb.className = '';
+      mb.textContent = '🛋️ ' + nearFurn.lbl + ' — Tap E to interact!'; mb.className = '';
     }
     btnE.classList.add('active');
   } else if (isStageComplete()) {
@@ -3223,7 +3232,7 @@ function drawPcActivityExtras(px, py) {
   ctx.fillStyle = '#38BDF8';
   ctx.font = 'bold ' + Math.floor(T * 0.36) + 'px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(tick % 36 < 18 ? 'âŒ¨' : 'â–¶', x, y - T * 0.86);
+  ctx.fillText(tick % 36 < 18 ? '⌨' : '▶', x, y - T * 0.86);
   ctx.restore();
 }
 
@@ -3272,7 +3281,7 @@ function drawReadEffect(px, py){
   var sp = (tick*0.06)%1;
   ctx.fillStyle = 'rgba(96,165,250,' + (1-sp)*0.8 + ')';
   ctx.font = 'bold ' + Math.floor(T*0.3) + 'px serif'; ctx.textAlign='center';
-  ctx.fillText('âœŽ', T*0.2, -T*0.3 - sp*T*0.5);
+  ctx.fillText('✎', T*0.2, -T*0.3 - sp*T*0.5);
   ctx.restore();
 }
 function drawSmellEffect(px, py){
@@ -3741,7 +3750,7 @@ function drawNpc(npc){
   var tag=npc.name; var tw=ctx.measureText(tag).width+10; var ty=y-T*1.05;
   ctx.fillStyle='rgba(20,60,90,0.72)'; roundedRectPath(ctx,x-tw/2,ty-T*0.22,tw,T*0.44,T*0.18); ctx.fill();
   ctx.fillStyle='#fff'; ctx.fillText(tag,x,ty);
-  var ind=npc.done?'âœ“':'?'; var iy=y-T*1.6+Math.sin(tick*0.12)*1.6;
+  var ind=npc.done?'✓':'?'; var iy=y-T*1.6+Math.sin(tick*0.12)*1.6;
   ctx.font='bold '+Math.floor(T*0.55)+'px sans-serif';
   ctx.fillStyle=npc.done?(npc.correct?'#1D9E75':'#9AA0A8'):'#EF9F27';
   ctx.fillText(ind,x,iy);
@@ -3847,7 +3856,7 @@ function drawGame(){
     if(s.broken){
       ctx.fillStyle='#333'; ctx.fillRect(px,py,pw,ph);
       ctx.strokeStyle='#111'; ctx.lineWidth=2; ctx.strokeRect(px+1,py+1,pw-2,ph-2);
-      ctx.fillStyle='#fff'; ctx.font='bold '+(T)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('ðŸ’¥', px+pw/2, py+ph/2);
+      ctx.fillStyle='#fff'; ctx.font='bold '+(T)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('💥', px+pw/2, py+ph/2);
       ctx.fillStyle='#aaa'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('BROKEN', px+pw/2, py+ph+2);
       return;
     }
@@ -3918,7 +3927,7 @@ function interact(){
   
   if(nearFixedSpot) {
     if (nearFixedSpot.label === 'Office PCs' && nearFixedSpot.fixed) {
-      startFurnitureActivity({x: nearFixedSpot.x, y: nearFixedSpot.y, w: nearFixedSpot.w, h: nearFixedSpot.h, lbl: 'Office PCs', e: 'ðŸ–¥ï¸'});
+      startFurnitureActivity({x: nearFixedSpot.x, y: nearFixedSpot.y, w: nearFixedSpot.w, h: nearFixedSpot.h, lbl: 'Office PCs', e: '🖥️'});
       return;
     }
     showFixedDialogue(nearFixedSpot); return;
@@ -3980,9 +3989,9 @@ function petObs(pet){
 
 function showFixedDialogue(s) {
   gstate = 'challenge'; sfx.pop();
-  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info" style="background:#E1F5EE; color:#0F6E56;">âœ¨ Solved</span>';
+  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info" style="background:#E1F5EE; color:#0F6E56;">✨ Solved</span>';
   html += '<div class="sheet-title">' + s.label + '</div>';
-  html += '<div class="dialogue-box"><div class="dialogue-avatar" style="color:var(--darkgreen);">âœ“</div><div class="dialogue-text">This device is running at maximum efficiency! You successfully saved <b>RM ' + (s.savings || 0) + '</b> per month here!</div></div>';
+  html += '<div class="dialogue-box"><div class="dialogue-avatar" style="color:var(--darkgreen);">✓</div><div class="dialogue-text">This device is running at maximum efficiency! You successfully saved <b>RM ' + (s.savings || 0) + '</b> per month here!</div></div>';
   html += '<button class="btn-continue" onclick="cont()">Continue Exploring</button>';
   document.getElementById('challenge-sheet').innerHTML = html;
   document.getElementById('challenge-overlay').classList.add('show');
@@ -3990,7 +3999,7 @@ function showFixedDialogue(s) {
 
 function showFurnitureDialogue(f) {
   gstate = 'challenge'; sfx.pop();
-  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">ðŸ›‹ï¸ Furniture</span>';
+  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">🛋️ Furniture</span>';
   html += '<div class="sheet-title">' + f.lbl + '</div>';
   html += '<div class="dialogue-box"><div class="dialogue-avatar">' + f.e + '</div><div class="dialogue-text">This ' + f.lbl + ' looks perfectly fine. There are no energy problems here.</div></div>';
   
@@ -4006,7 +4015,7 @@ window.useFurniture = function(lbl, emoji) {
   sfx.click();
   var _m = furnMsgs[lbl];
   var actionText = Array.isArray(_m) ? _m[Math.floor(Math.random()*_m.length)] : (_m || ("You take a moment to look at the " + lbl + "."));
-  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">âœ¨ Interact</span>';
+  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">✨ Interact</span>';
   html += '<div class="sheet-title">' + lbl + '</div>';
   html += '<div class="dialogue-box"><div class="dialogue-avatar">' + emoji + '</div><div class="dialogue-text">"' + actionText + '"</div></div>';
   html += '<button class="btn-continue" onclick="cont()">Continue Exploring</button>';
@@ -4018,11 +4027,11 @@ function showKidDialogue() {
   gstate = 'challenge'; sfx.pop();
   var isEvil = (kid.type === 'evil');
   var nm = (kid.model && kid.model.name) ? kid.model.name : 'The neighbor kid';
-  var av = (kid.model && kid.model.emoji) ? kid.model.emoji : 'ðŸ§’';
+  var av = (kid.model && kid.model.emoji) ? kid.model.emoji : '🧒';
   var pool = isEvil ? kidLinesEvil : kidLinesGood;
   var kidMsg = pool[Math.floor(Math.random()*pool.length)];
   
-  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">ðŸ’¬ Conversation</span>';
+  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">💬 Conversation</span>';
   html += '<div class="sheet-title">' + nm + ' (Neighbor Kid)</div>';
   html += '<div class="dialogue-box"><div class="dialogue-avatar">' + av + '</div><div class="dialogue-text">"' + kidMsg + '"</div></div>';
   html += '<button class="btn-continue" onclick="kickKidOut()">Tell them to go home</button>';
@@ -4035,7 +4044,7 @@ function showKidDialogue() {
 function kickKidOut() {
   kid.active = false;
   cont();
-  setTempMsg("ðŸ‘‹ You told the neighbor kid to go home.", 300);
+  setTempMsg("👋 You told the neighbor kid to go home.", 300);
   sfx.run();
 }
 
@@ -4045,8 +4054,8 @@ function showNpcDialogue(npc){
   html+='<div class="sheet-title">'+npc.avatar+' '+npc.name+' <span style="font-size:12px;color:var(--muted);font-weight:500;">('+npc.role+')</span></div>';
   if(npc.done){
     var lines = npc.correct
-      ? ["Thanks again â€” you really know your energy stuff!","Hi again! Great chatting earlier.","Good to see you, detective. Keep saving that energy!"]
-      : ["Hi again! No worries about earlier â€” keep exploring.","Hello! Saving energy takes practice â€” you'll get there.","Good to see you again. Enjoy the rest of your visit!"];
+      ? ["Thanks again — you really know your energy stuff!","Hi again! Great chatting earlier.","Good to see you, detective. Keep saving that energy!"]
+      : ["Hi again! No worries about earlier — keep exploring.","Hello! Saving energy takes practice — you'll get there.","Good to see you again. Enjoy the rest of your visit!"];
     var line=lines[Math.floor(Math.random()*lines.length)];
     html+='<div class="dialogue-box"><div class="dialogue-avatar">'+npc.avatar+'</div><div class="dialogue-text">'+line+'</div></div>';
     html+='<button class="btn-continue" onclick="cont()">Bye for now</button>';
@@ -4093,8 +4102,8 @@ function showPetDialogue(pet) {
   gstate = 'challenge'; sfx.pop(); animalSound(pet.emoji);
   activePet = pet;
   var nm = pet.name || 'an animal';
-  var sub = pet.species ? (pet.species + ' Â· ' + pet.model) : '';
-  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">ðŸ¾ Animal Encounter</span><div class="sheet-title">' + pet.emoji + ' ' + nm + (sub ? ' <span style="font-size:12px;color:var(--muted);font-weight:500;">(' + sub + ')</span>' : '') + '</div>';
+  var sub = pet.species ? (pet.species + ' · ' + pet.model) : '';
+  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">🐾 Animal Encounter</span><div class="sheet-title">' + pet.emoji + ' ' + nm + (sub ? ' <span style="font-size:12px;color:var(--muted);font-weight:500;">(' + sub + ')</span>' : '') + '</div>';
   html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">' + petObs(pet) + '</div></div>';
   html += '<button class="btn-continue" onclick="resolvePetInteract()">Gently pet ' + nm + '</button>';
   html += '<button class="btn-retry" onclick="cont()">Leave ' + nm + ' alone</button>';
@@ -4106,39 +4115,39 @@ function showPetDialogue(pet) {
 function resolvePetInteract() {
   var pet = activePet;
   pet.tamed = true;
-  var isCat = (pet.emoji === 'ðŸˆ'); 
-  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">ðŸ¾ Animal Interaction</span><div class="sheet-title">You interact with the ' + pet.emoji + '</div>';
+  var isCat = (pet.emoji === '🐈'); 
+  var html = '<div class="sheet-handle"></div><span class="sheet-badge badge-info">🐾 Animal Interaction</span><div class="sheet-title">You interact with the ' + pet.emoji + '</div>';
   var outcomeMsg = ""; var brokenSpots = gameData[currentStageIdx].spots.filter(s => s.broken); var unbrokenSpots = gameData[currentStageIdx].spots.filter(s => !s.fixed && !s.broken);
 
   if (isCat) {
     if (Math.random() < 0.5) { 
       sfx.hisscat(); sfx.break();
-      html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">You reach out to pet the Cat, but it is fierce and feisty! It hisses and goes on a rampage! ðŸ˜¾</div></div>';
+      html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">You reach out to pet the Cat, but it is fierce and feisty! It hisses and goes on a rampage! 😾</div></div>';
       if (Math.random() < 0.5 && unbrokenSpots.length > 0) {
         var target = unbrokenSpots[Math.floor(Math.random() * unbrokenSpots.length)];
         target.broken = true; target.fixed = true; target.attempts = 2; stageFixedCount++; totalScore = Math.max(0, totalScore - 50);
-        outcomeMsg = '<div class="outcome-box outcome-bad">ðŸ’¥ Oh no! The angry cat knocked over the <b>' + target.label + '</b> and broke it! You lost 50 pts.</div>';
+        outcomeMsg = '<div class="outcome-box outcome-bad">💥 Oh no! The angry cat knocked over the <b>' + target.label + '</b> and broke it! You lost 50 pts.</div>';
       } else {
         outcomeMsg = '<div class="outcome-box outcome-info">The cat storms off, but luckily it didn\'t break anything this time!</div>';
       }
     } else { 
       sfx.purr();
-      html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">You gently scratch the Cat behind the ears. It purrs loudly and rubs against your leg! ðŸ˜»</div></div>';
+      html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">You gently scratch the Cat behind the ears. It purrs loudly and rubs against your leg! 😻</div></div>';
       if (Math.random() < 0.5 && brokenSpots.length > 0) {
         var target = brokenSpots[Math.floor(Math.random() * brokenSpots.length)];
         target.broken = false; target.fixed = false; target.attempts = 0; stageFixedCount--; 
-        outcomeMsg = '<div class="outcome-box outcome-good">âœ¨ Miracle! The cat\'s playful energy somehow recovered the broken <b>' + target.label + '</b>! You can try fixing it again!</div>';
+        outcomeMsg = '<div class="outcome-box outcome-good">✨ Miracle! The cat\'s playful energy somehow recovered the broken <b>' + target.label + '</b>! You can try fixing it again!</div>';
       } else {
         outcomeMsg = '<div class="outcome-box outcome-info">You gained a new feline friend! It is happily purring.</div>';
       }
     }
   } else { 
     sfx.magic();
-    html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">You find the animal adorable and decide to give it a gentle pat. What a cute and loving companion! ðŸ¥°</div></div>';
+    html += '<div class="dialogue-box"><div class="dialogue-avatar">' + pet.emoji + '</div><div class="dialogue-text">You find the animal adorable and decide to give it a gentle pat. What a cute and loving companion! 🥰</div></div>';
     if (Math.random() < 0.5 && brokenSpots.length > 0) {
         var target = brokenSpots[Math.floor(Math.random() * brokenSpots.length)];
         target.broken = false; target.fixed = false; target.attempts = 0; stageFixedCount--; 
-        outcomeMsg = '<div class="outcome-box outcome-good">âœ¨ Miracle! The cheerful energy of the ' + pet.emoji + ' miraculously recovered the broken <b>' + target.label + '</b>! You can try fixing it again!</div>';
+        outcomeMsg = '<div class="outcome-box outcome-good">✨ Miracle! The cheerful energy of the ' + pet.emoji + ' miraculously recovered the broken <b>' + target.label + '</b>! You can try fixing it again!</div>';
     } else {
         outcomeMsg = '<div class="outcome-box outcome-info">The ' + pet.emoji + ' happily accepts your pets and wiggles in joy!</div>';
     }
@@ -4174,18 +4183,18 @@ function showChallenge(s){
 
   var html=`<div class="sheet-handle"></div>`;
   html+=`<div class="sheet-title" style="margin-bottom: 4px;">${s.label}</div>`;
-  if(s.chapter){ html+=`<div style="display:inline-block;margin-bottom:8px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#EEF2FF;color:#4338CA;">ðŸ“˜ ${s.chapter}</div>`; }
+  if(s.chapter){ html+=`<div style="display:inline-block;margin-bottom:8px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#EEF2FF;color:#4338CA;">📘 ${s.chapter}</div>`; }
   html+=`<div class="sheet-desc" style="margin-bottom: 12px; font-size: 14px;">${s.situation}</div>`;
 
   if(s.calc){
     html+=`<div style="background:#F8FAFC;border:2px solid #E2E8F0;border-radius:14px;padding:10px 12px;margin-bottom:12px;">`;
-    html+=`<div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">ðŸ§® Given</div>`;
+    html+=`<div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">🧮 Given</div>`;
     html+=`<div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;">`;
     s.calc.given.forEach(g => {
       html+=`<div><span style="color:#64748B;">${g[0]}:</span> <b style="color:#0F172A;">${g[1]}</b></div>`;
     });
     html+=`</div>`;
-    if(s.calc.ask){ html+=`<div style="margin-top:8px;font-size:13px;font-weight:700;color:#1D4ED8;">â“ ${s.calc.ask}</div>`; }
+    if(s.calc.ask){ html+=`<div style="margin-top:8px;font-size:13px;font-weight:700;color:#1D4ED8;">❓ ${s.calc.ask}</div>`; }
     html+=`</div>`;
   }
 
@@ -4489,7 +4498,7 @@ function resolve(idx){
     document.getElementById('hfound').textContent = stageFixedCount+'/5';
     document.getElementById('hsave').textContent = 'RM '+totalSavings;
     document.getElementById('hscore').textContent = totalScore+' pts';
-    html+=`<div class="sheet-title" style="color:#0F6E56">âœ“ Correct!</div><div class="outcome-box outcome-good">${s.gout}</div><div class="fact-box">ðŸ“š ${s.fact}</div><span style="display:inline-block; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:700; background:#E1F5EE; color:var(--darkgreen);">+RM ${s.savings}/mo saved &nbsp;Â·&nbsp; +${s.pts} pts</span><br>`;
+    html+=`<div class="sheet-title" style="color:#0F6E56">✓ Correct!</div><div class="outcome-box outcome-good">${s.gout}</div><div class="fact-box">📚 ${s.fact}</div><span style="display:inline-block; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:700; background:#E1F5EE; color:var(--darkgreen);">+RM ${s.savings}/mo saved &nbsp;·&nbsp; +${s.pts} pts</span><br>`;
     
     if(stageFixedCount === 5){
       if(currentStageIdx === gameData.length - 1) {
@@ -4524,7 +4533,7 @@ function resolve(idx){
         }
       }
 
-      html+=`<div class="sheet-title" style="color:#A32D2D">ðŸ’¥ Device Broken!</div><div class="outcome-box outcome-bad">You chose wrong twice! The device is now permanently broken. You lost 50 points and missed out on the energy savings. ${petLostMsg}</div>`;
+      html+=`<div class="sheet-title" style="color:#A32D2D">💥 Device Broken!</div><div class="outcome-box outcome-bad">You chose wrong twice! The device is now permanently broken. You lost 50 points and missed out on the energy savings. ${petLostMsg}</div>`;
       
       if(stageFixedCount === 5){
         if(currentStageIdx === gameData.length - 1) {
@@ -4540,7 +4549,7 @@ function resolve(idx){
       sfx.error();
       totalScore = Math.max(0, totalScore - 20); 
       document.getElementById('hscore').textContent = totalScore+' pts';
-      html+=`<div class="sheet-title" style="color:#A32D2D">âœ— Not right!</div><div class="outcome-box outcome-bad">${s.bout}</div><div class="fact-box">ðŸ“š Hint: ${s.fact}</div><div style="margin-bottom:12px; font-size:13px; font-weight:bold; color:var(--darkred);">âš  1 attempt remaining! Lose 20 pts.</div><button class="btn-retry" onclick="retry()">Try Again</button>`;
+      html+=`<div class="sheet-title" style="color:#A32D2D">✗ Not right!</div><div class="outcome-box outcome-bad">${s.bout}</div><div class="fact-box">📚 Hint: ${s.fact}</div><div style="margin-bottom:12px; font-size:13px; font-weight:bold; color:var(--darkred);">⚠ 1 attempt remaining! Lose 20 pts.</div><button class="btn-retry" onclick="retry()">Try Again</button>`;
     }
   }
   document.getElementById('challenge-sheet').innerHTML=html;
@@ -4654,7 +4663,7 @@ function showAdoptions() {
   gameData.forEach(stage => {
     stage.pets.forEach(pet => {
       var isLost = lostPetEmojis.includes(pet.emoji);
-      var displayEmoji = isLost ? 'ðŸª¦' : pet.emoji;
+      var displayEmoji = isLost ? '🪦' : pet.emoji;
       var statusText = isLost ? 'Ran Away' : 'Adopted';
       var cardClass = isLost ? 'pet-card lost' : 'pet-card';
       listHtml += `<div class="${cardClass}"><div class="pet-emoji">${displayEmoji}</div><div class="pet-status">${statusText}</div></div>`;
@@ -4690,5 +4699,6 @@ initPlayerAndLeaderboardUi();
 </script>
 </body>
 </html>
+
 
 
